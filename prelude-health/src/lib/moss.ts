@@ -10,9 +10,14 @@ interface HistoryDoc {
 }
 
 // In-memory copy of every indexed doc, used both for the keyword fallback
-// and so the demo works with zero keys configured.
-const globalDocs = globalThis as unknown as { __prelude_history?: Map<string, HistoryDoc[]> };
-if (!globalDocs.__prelude_history) globalDocs.__prelude_history = new Map();
+// and so the demo works with zero keys configured. Also tracks the in-flight
+// Moss index build per patient so queries can tell "building" from "missing".
+const g = globalThis as unknown as {
+  __prelude_history?: Map<string, HistoryDoc[]>;
+  __prelude_moss_jobs?: Map<string, Promise<boolean>>;
+};
+if (!g.__prelude_history) g.__prelude_history = new Map();
+if (!g.__prelude_moss_jobs) g.__prelude_moss_jobs = new Map();
 
 function mossConfigured(): boolean {
   return Boolean(process.env.MOSS_PROJECT_ID && process.env.MOSS_PROJECT_KEY);
@@ -31,16 +36,45 @@ async function getMoss(): Promise<any> {
 
 const indexName = (patientId: string) => `patient-${patientId.replace(/[^a-zA-Z0-9-]/g, '')}`.slice(0, 60);
 
-export async function indexPatientHistory(patientId: string, docs: HistoryDoc[]): Promise<void> {
-  globalDocs.__prelude_history!.set(patientId, docs);
-  if (!mossConfigured()) return;
+// Builds (or rebuilds) the Moss index for a patient. createIndex polls until
+// the index is queryable, so when this resolves true the index is live.
+// If the index already exists (SDK throws), upsert the docs instead.
+async function buildMossIndex(patientId: string, docs: HistoryDoc[]): Promise<boolean> {
+  const client = await getMoss();
+  const name = indexName(patientId);
   try {
-    const client = await getMoss();
-    await client.createIndex(indexName(patientId), docs, { modelId: 'moss-minilm' });
-    await client.loadIndex(indexName(patientId));
+    await client.createIndex(name, docs, { modelId: 'moss-minilm' });
   } catch (err) {
-    console.error('Moss indexing failed (fallback search will be used):', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/already exists/i.test(msg)) {
+      await client.addDocs(name, docs, { upsert: true });
+    } else {
+      throw err;
+    }
   }
+  // Load into memory for ~1-10ms local queries (query() would otherwise hit
+  // the cloud endpoint — still correct, just slower). Non-fatal if it fails.
+  try {
+    await client.loadIndex(name);
+  } catch (err) {
+    console.warn('Moss loadIndex failed (queries fall back to cloud endpoint):', err);
+  }
+  return true;
+}
+
+// Kicks off the index build WITHOUT blocking the caller — intake-session must
+// return fast so the voice call can start. The job promise is tracked so
+// queryPatientHistory can await a nearly-done build or lazily re-kick a failed one.
+export async function indexPatientHistory(patientId: string, docs: HistoryDoc[]): Promise<void> {
+  g.__prelude_history!.set(patientId, docs);
+  if (!mossConfigured()) return;
+  const job = buildMossIndex(patientId, docs).catch((err) => {
+    console.error('Moss indexing failed (fallback search will be used):', err);
+    // Drop the failed job so a later query lazily re-kicks the build.
+    g.__prelude_moss_jobs!.delete(patientId);
+    return false;
+  });
+  g.__prelude_moss_jobs!.set(patientId, job);
 }
 
 export async function queryPatientHistory(
@@ -50,18 +84,41 @@ export async function queryPatientHistory(
 ): Promise<{ source: 'moss' | 'fallback'; results: { text: string; score?: number }[] }> {
   if (mossConfigured()) {
     try {
-      const client = await getMoss();
-      const results = await client.query(indexName(patientId), query, { topK });
-      return {
-        source: 'moss',
-        results: (results || []).map((r: { text: string; score?: number }) => ({ text: r.text, score: r.score })),
-      };
+      // If the index build is still in flight, give it a moment to finish —
+      // but never stall the voice agent for more than ~2.5s.
+      const job = g.__prelude_moss_jobs!.get(patientId);
+      let ready = true;
+      if (job) {
+        ready = await Promise.race([job, new Promise<boolean>((r) => setTimeout(() => r(false), 2500))]);
+      } else {
+        // No tracked job (e.g. server restarted): lazily re-index from the
+        // in-memory docs if we have them, then fall back for this query.
+        const docs = g.__prelude_history!.get(patientId);
+        if (docs?.length) {
+          void indexPatientHistory(patientId, docs);
+          ready = false;
+        }
+      }
+      if (ready) {
+        const client = await getMoss();
+        const res = await client.query(indexName(patientId), query, { topK });
+        const docs = Array.isArray(res?.docs) ? res.docs : [];
+        return {
+          source: 'moss',
+          results: docs.map((d: { text: string; score?: number }) => ({ text: d.text, score: d.score })),
+        };
+      }
     } catch (err) {
       console.error('Moss query failed, using keyword fallback:', err);
+      // Lazy re-index for the next query if the index vanished server-side.
+      const docs = g.__prelude_history!.get(patientId);
+      if (docs?.length && !g.__prelude_moss_jobs!.get(patientId)) {
+        void indexPatientHistory(patientId, docs);
+      }
     }
   }
   // Keyword fallback
-  const docs = globalDocs.__prelude_history!.get(patientId) || [];
+  const docs = g.__prelude_history!.get(patientId) || [];
   const terms = query.toLowerCase().split(/\W+/).filter((t) => t.length > 3);
   const scored = docs
     .map((d) => ({
