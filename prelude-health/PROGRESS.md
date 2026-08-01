@@ -92,3 +92,14 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
 - [11:25] [lane-2] NOTE for Lane 3: /api/history "Moss query failed, using keyword fallback:
   TypeError: (results || []).map is not a function" — live Moss query response shape differs
   from expected array. Your fix, in moss.ts queryPatientHistory.
+- [12:10] [lane-2] SECURITY: my earlier lane-2 branch was cut from the PRE-rewrite history and
+  its push republished the committed .env on the public repo. Fixed: lane-2 work cherry-picked
+  onto clean main (e1d27d2, 2a34bb1), origin/lane-2 deleted, all remaining refs audited —
+  zero .env reachability. KEYS MUST STILL BE ROTATED (Deepgram/OpenAI/Medplum/Moss) —
+  GitHub caches deleted refs. Lesson: after a history rewrite, every un-rebased branch is a leak.
+- [12:15] [lane-2] Lane-4 ASK done: DELETE /api/patients/[id] route added (store.deletePatient —
+  Medplum RiskAssessment/Composition/DocumentReference/Encounter then Patient, + mem fallback).
+  Verified live: deleted test patient returns 410 from Medplum. Dashboard delete button works.
+- [12:15] [lane-2] Rerun `npx tsx scripts/cleanup-smoke.ts` right before video — smoke runs
+  since the last purge left new "Smoke Test" rows; also "Test Patient"/"E2E Verify"/"Moss Test"
+  junk rows can now be removed straight from the dashboard delete button.

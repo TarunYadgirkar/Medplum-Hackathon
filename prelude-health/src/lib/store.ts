@@ -271,6 +271,24 @@ export async function updateNote(
   return getNote(id);
 }
 
+export async function deletePatient(patientId: string): Promise<void> {
+  if (!medplumConfigured()) {
+    memdb.patients.delete(patientId);
+    for (const [id, note] of memdb.notes) {
+      if (note.patient_id === patientId) memdb.notes.delete(id);
+    }
+    return;
+  }
+  const medplum = await getMedplum();
+  for (const type of ['RiskAssessment', 'Composition', 'DocumentReference', 'Encounter'] as const) {
+    const related = await medplum.searchResources(type, `subject=Patient/${patientId}&_count=100`);
+    for (const resource of related) {
+      await medplum.deleteResource(type, resource.id as string);
+    }
+  }
+  await medplum.deleteResource('Patient', patientId);
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
