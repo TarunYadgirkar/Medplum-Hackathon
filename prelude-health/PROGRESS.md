@@ -215,3 +215,9 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   → both voice hooks → /api/eligibility + /api/generate-note. payerKey enum widened
   (legacy CMS still accepted → Medicare). Missing planId → carrier's first plan.
   build + tsc + smoke.sh green; curled BCBS/Kaiser/Medicare/Medicaid/CMS all correct.
+- [voice-ux] Anti-snappiness: RMS noise gate on mic (silence sent below threshold; higher
+  bar while agent speaking so echo/background noise can't barge-in but real talk-over
+  can), AGC off, echo cancellation kept. Mute mic + mute Prelude buttons on the call
+  screen (talk over it freely). "Skip the form — just talk to Prelude" path: agent
+  collects name + visit type in conversation (collectIdentity), form still works as
+  before. Both engines kept interface parity.

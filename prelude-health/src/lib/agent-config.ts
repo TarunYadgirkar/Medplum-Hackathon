@@ -30,6 +30,7 @@ export function buildAgentSettings(args: {
   chartSystemName?: string | null;
   keyterms?: string[];
   callSeconds?: number;
+  collectIdentity?: boolean;
 }) {
   const patientName = sanitizeField(args.patientName);
   const appointmentType = sanitizeField(args.appointmentType);
@@ -40,7 +41,7 @@ export function buildAgentSettings(args: {
 You are speaking with ${patientName}, who has a "${appointmentType}" appointment coming up.${chartBlock}
 
 Your job, in order:
-1. Briefly confirm why they are coming in (chief concern) and ask focused follow-up questions: onset, severity, what makes it better/worse, related symptoms, medications tried.
+${args.collectIdentity ? '0. The patient skipped the check-in form. FIRST ask for their full name, then what kind of appointment this is for — one at a time, then continue below.\n' : ''}1. Briefly confirm why they are coming in (chief concern) and ask focused follow-up questions: onset, severity, what makes it better/worse, related symptoms, medications tried.
 2. When their concern might relate to their medical history, call lookup_patient_history to check prior visits, allergies, and medications — then reference what you find naturally ("I see you had a similar rash last November...").
 3. Ask if they have questions about cost or insurance. If they do (or if they mention cost), call check_insurance_coverage and relay the copay/estimate in plain language.
 4. Ask if there is anything else the doctor should know, then close: their answers will be summarized for the provider to review before the visit.
@@ -112,7 +113,9 @@ Hard rules:
       speak: {
         provider: { type: 'deepgram', model: 'aura-2-thalia-en' },
       },
-      greeting: (args.callSeconds && args.callSeconds <= 40)
+      greeting: args.collectIdentity
+        ? `Hi, I'm Prelude, your clinic's intake assistant — no forms needed, we'll just talk. First, what's your full name?`
+        : (args.callSeconds && args.callSeconds <= 40)
         ? `Hi ${patientName.split(' ')[0]}, I'm Prelude — quick check-in for your doctor. What brings you in?`
         : args.chartSystemName
         ? `Hi ${patientName.split(' ')[0]}, I'm Prelude, your clinic's intake assistant. I already have your records from ${sanitizeField(args.chartSystemName)}, so I won't make you repeat your history. So, what brings you in?`

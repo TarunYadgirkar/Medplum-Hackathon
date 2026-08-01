@@ -35,10 +35,16 @@ export interface AudioCapture {
 }
 
 // Captures mic audio as PCM16 and forwards base64 chunks via onChunk.
+// opts.gate (optional) is consulted per buffer: return {muted, threshold} —
+// muted or below-RMS-threshold buffers are sent as silence, so background
+// noise never trips the server-side VAD.
 export async function startAudioCapture(
-  onChunk: (base64: string) => void
+  onChunk: (base64: string) => void,
+  opts?: { gate?: () => { muted: boolean; threshold: number } }
 ): Promise<AudioCapture> {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: false },
+  });
   const audioContext = new AudioContext({ sampleRate: 24000 });
   const source = audioContext.createMediaStreamSource(stream);
   const processor = audioContext.createScriptProcessor(4096, 1, 1);
@@ -50,8 +56,16 @@ export async function startAudioCapture(
   const zeroGain = audioContext.createGain();
   zeroGain.gain.value = 0;
 
+  const silent = pcm16ToBase64(new Int16Array(4096));
   processor.onaudioprocess = (e) => {
     const inputData = e.inputBuffer.getChannelData(0);
+    const gate = opts?.gate?.();
+    if (gate) {
+      if (gate.muted) { onChunk(silent); return; }
+      let sum = 0;
+      for (let i = 0; i < inputData.length; i++) sum += inputData[i] * inputData[i];
+      if (Math.sqrt(sum / inputData.length) < gate.threshold) { onChunk(silent); return; }
+    }
     const pcm16 = floatTo16BitPCM(inputData);
     onChunk(pcm16ToBase64(pcm16));
   };
@@ -79,9 +93,16 @@ export class AudioPlaybackQueue {
   private context: AudioContext;
   private nextStartTime = 0;
   private sources: AudioBufferSourceNode[] = [];
+  private masterGain: GainNode;
 
   constructor() {
     this.context = new AudioContext({ sampleRate: 24000 });
+    this.masterGain = this.context.createGain();
+    this.masterGain.connect(this.context.destination);
+  }
+
+  setMuted(muted: boolean) {
+    this.masterGain.gain.value = muted ? 0 : 1;
   }
 
   enqueue(base64Chunk: string) {
@@ -96,7 +117,7 @@ export class AudioPlaybackQueue {
 
     const source = this.context.createBufferSource();
     source.buffer = buffer;
-    source.connect(this.context.destination);
+    source.connect(this.masterGain);
 
     const startTime = Math.max(this.context.currentTime, this.nextStartTime);
     source.start(startTime);

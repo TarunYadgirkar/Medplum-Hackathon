@@ -35,6 +35,7 @@ interface StartArgs {
   patientName: string;
   appointmentType: string;
   callSeconds?: number;
+  collectIdentity?: boolean;
 }
 
 export function useGrokVoice() {
@@ -42,6 +43,10 @@ export function useGrokVoice() {
   const [transcript, setTranscript] = useState<TranscriptUtterance[]>([]);
   const [coverage, setCoverage] = useState<CoverageSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [micMuted, setMicMuted] = useState(false);
+  const [speakerMuted, setSpeakerMuted] = useState(false);
+  const micMutedRef = useRef(false);
+  const speakerMutedRef = useRef(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const captureRef = useRef<AudioCapture | null>(null);
@@ -69,6 +74,17 @@ export function useGrokVoice() {
     setState(finalState);
     return transcriptRef.current;
   }, [cleanup]);
+
+  const toggleMic = useCallback(() => {
+    micMutedRef.current = !micMutedRef.current;
+    setMicMuted(micMutedRef.current);
+  }, []);
+
+  const toggleSpeaker = useCallback(() => {
+    speakerMutedRef.current = !speakerMutedRef.current;
+    setSpeakerMuted(speakerMutedRef.current);
+    playbackRef.current?.setMuted(speakerMutedRef.current);
+  }, []);
 
   const runFunction = useCallback(async (name: string, args: Record<string, unknown>): Promise<string> => {
     try {
@@ -103,7 +119,7 @@ export function useGrokVoice() {
     return 'The lookup failed — continue without it.';
   }, []);
 
-  const start = useCallback(async ({ patientId, patientName, appointmentType, callSeconds }: StartArgs) => {
+  const start = useCallback(async ({ patientId, patientName, appointmentType, callSeconds, collectIdentity }: StartArgs) => {
     setState('connecting');
     setError(null);
     transcriptRef.current = [];
@@ -127,7 +143,7 @@ export function useGrokVoice() {
           type: 'session.update',
           session: {
             voice: 'eve',
-            instructions: buildPaceBlock(callSeconds) + GROK_INSTRUCTIONS(patientName, appointmentType, [importMatchesPatient(patientName) ? buildEpicContext() : null, buildMedCardContext(getMedCard())].filter(Boolean).join('\n') || null),
+            instructions: (collectIdentity ? 'The patient skipped the check-in form. FIRST ask for their full name, then the appointment type — one at a time — before the intake questions. Greet without using any name.\n\n' : '') + buildPaceBlock(callSeconds) + GROK_INSTRUCTIONS(patientName, appointmentType, [importMatchesPatient(patientName) ? buildEpicContext() : null, buildMedCardContext(getMedCard())].filter(Boolean).join('\n') || null),
             turn_detection: { type: 'server_vad' },
             input_audio_transcription: { model: 'grok-2-audio' },
             audio: {
@@ -167,6 +183,11 @@ export function useGrokVoice() {
         startAudioCapture((base64) => {
           if (ws.readyState !== WebSocket.OPEN || ws.bufferedAmount > 1_000_000) return;
           ws.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: base64 }));
+        }, {
+          gate: () => ({
+            muted: micMutedRef.current,
+            threshold: responseActiveRef.current ? 0.035 : 0.012,
+          }),
         })
           .then((capture) => { captureRef.current = capture; setState('active'); })
           .catch((err) => { setError(`Microphone error: ${err.message}`); setState('error'); });
@@ -267,5 +288,5 @@ export function useGrokVoice() {
     }
   }, [cleanup, runFunction, setMessages]);
 
-  return { state, transcript, coverage, error, start, stop };
+  return { state, transcript, coverage, error, start, stop, micMuted, speakerMuted, toggleMic, toggleSpeaker };
 }

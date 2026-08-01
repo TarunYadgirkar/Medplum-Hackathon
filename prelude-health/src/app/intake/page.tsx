@@ -120,6 +120,8 @@ export default function IntakePage() {
   const [finishing, setFinishing] = useState(false);
   const [noteId, setNoteId] = useState<string | null>(null);
   const [chartConnected, setChartConnected] = useState(false);
+  const [voiceFirst, setVoiceFirst] = useState(false);
+  const [sessionName, setSessionName] = useState('');
 
   // "Connected" only when the imported chart is for THIS name — a leftover
   // import from a previous patient shows as not connected.
@@ -178,13 +180,16 @@ export default function IntakePage() {
         localStorage.setItem('prelude-payer', payerKey);
         localStorage.setItem('prelude-plan', planId);
       }
+      const skipForm = voiceFirst && !name.trim();
+      const effectiveName = skipForm ? 'Walk-in Patient' : name;
       const res = await fetch('/api/intake-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientName: name, appointmentType, ageRange, historyDocs: importMatchesPatient(name) ? getImportedHistoryDocs() ?? undefined : undefined }),
+        body: JSON.stringify({ patientName: effectiveName, appointmentType: skipForm ? 'Voice check-in' : appointmentType, ageRange, historyDocs: importMatchesPatient(effectiveName) ? getImportedHistoryDocs() ?? undefined : undefined }),
       });
       const data = await res.json();
       setSession(data);
+      setSessionName(effectiveName);
       goToStep('calling');
 
       const cfg = await fetch('/api/voice-config').then((r) => r.json()).catch(() => ({ provider: 'demo' }));
@@ -193,14 +198,14 @@ export default function IntakePage() {
         setDemoMode(true);
       } else {
         const engine = cfg.provider === 'grok' ? grok : deepgram;
-        await engine.start({ patientId: data.patientId, patientName: name, appointmentType, callSeconds: CALL_LENGTHS[callLengthIdx].seconds });
+        await engine.start({ patientId: data.patientId, patientName: effectiveName, appointmentType: skipForm ? 'Voice check-in' : appointmentType, callSeconds: CALL_LENGTHS[callLengthIdx].seconds, collectIdentity: skipForm });
       }
     } catch {
       alert('Failed to start check-in. Try again.');
     } finally {
       setLoading(false);
     }
-  }, [name, appointmentType, ageRange, payerKey, planId, callLengthIdx, grok, deepgram, goToStep]);
+  }, [name, appointmentType, ageRange, payerKey, planId, callLengthIdx, voiceFirst, grok, deepgram, goToStep]);
 
   const finishCall = useCallback(async (transcriptText?: string) => {
     if (!session) return;
@@ -215,7 +220,7 @@ export default function IntakePage() {
           transcript: finalTranscript || DEMO_TRANSCRIPT,
           patientId: session.patientId,
           encounterId: session.encounterId,
-          patientName: name,
+          patientName: sessionName || name,
           payerKey: payerKey === 'NONE' ? undefined : payerKey,
           planId: payerKey === 'NONE' ? undefined : planId,
         }),
@@ -436,10 +441,16 @@ export default function IntakePage() {
                     </div>
                   </div>
 
-                  <Btn onClick={() => goToStep('consent')} disabled={!name.trim() || (isCustomAppointment && !appointmentType.trim())}
+                  <Btn onClick={() => { setVoiceFirst(false); goToStep('consent'); }} disabled={!name.trim() || (isCustomAppointment && !appointmentType.trim())}
                     className="mt-6 w-full px-6 py-4 flex items-center justify-center gap-2.5 text-[13px]">
                     Continue<Icon name="arrow_forward" className="text-[20px]" />
                   </Btn>
+                  <button type="button" onClick={() => { setVoiceFirst(true); goToStep('consent'); }}
+                    className="mt-3 w-full border border-line bg-surface hover:border-brand hover:bg-brand-light transition-colors px-6 py-3.5 flex items-center justify-center gap-2.5 text-[13px] font-semibold text-ink">
+                    <Icon name="mic" className="text-[18px] text-brand" />
+                    Skip the form — just talk to Prelude
+                  </button>
+                  <p className="mt-1.5 text-center text-xs text-faint">Prelude will ask your name and visit type in conversation.</p>
                 </div>
               )}
 
@@ -607,11 +618,27 @@ export default function IntakePage() {
                         )}
 
                         {(voiceState === 'active' || voiceState === 'agent_speaking') && (
-                          <Btn variant="dangerSoft" onClick={() => finishCall()} disabled={finishing}
-                            className="w-full px-6 py-3.5 flex items-center justify-center gap-2.5 text-xs">
-                            <Icon name="stop_circle" className="text-[18px]" />
-                            {finishing ? 'Charting to Medplum…' : 'End Check-in'}
-                          </Btn>
+                          <>
+                            <div className="flex gap-2.5">
+                              <button type="button" onClick={voice.toggleMic}
+                                aria-pressed={voice.micMuted}
+                                className={`flex-1 border px-4 py-3 flex items-center justify-center gap-2 text-xs font-semibold transition-colors ${voice.micMuted ? 'border-danger bg-danger/10 text-danger' : 'border-line bg-surface text-ink hover:border-brand'}`}>
+                                <Icon name={voice.micMuted ? 'mic_off' : 'mic'} className="text-[18px]" />
+                                {voice.micMuted ? 'Unmute mic' : 'Mute mic'}
+                              </button>
+                              <button type="button" onClick={voice.toggleSpeaker}
+                                aria-pressed={voice.speakerMuted}
+                                className={`flex-1 border px-4 py-3 flex items-center justify-center gap-2 text-xs font-semibold transition-colors ${voice.speakerMuted ? 'border-danger bg-danger/10 text-danger' : 'border-line bg-surface text-ink hover:border-brand'}`}>
+                                <Icon name={voice.speakerMuted ? 'volume_off' : 'volume_up'} className="text-[18px]" />
+                                {voice.speakerMuted ? 'Unmute Prelude' : 'Mute Prelude'}
+                              </button>
+                            </div>
+                            <Btn variant="dangerSoft" onClick={() => finishCall()} disabled={finishing}
+                              className="w-full px-6 py-3.5 flex items-center justify-center gap-2.5 text-xs">
+                              <Icon name="stop_circle" className="text-[18px]" />
+                              {finishing ? 'Charting to Medplum…' : 'End Check-in'}
+                            </Btn>
+                          </>
                         )}
                         {(voiceState === 'ended' || voiceState === 'error') && !finishing && (
                           <Btn onClick={() => finishCall()}

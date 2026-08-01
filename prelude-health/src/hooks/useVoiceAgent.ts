@@ -18,13 +18,22 @@ interface StartArgs {
   patientName: string;
   appointmentType: string;
   callSeconds?: number;
+  collectIdentity?: boolean;
 }
+
+// Mic gate: buffers quieter than this are sent as silence so background noise
+// never reaches the server VAD. While the agent is speaking the bar is higher —
+// deliberate talk-over still interrupts, ambient noise and speaker echo don't.
+const GATE_IDLE = 0.012;
+const GATE_WHILE_AGENT_SPEAKING = 0.035;
 
 export function useVoiceAgent() {
   const [state, setState] = useState<VoiceAgentState>('idle');
   const [transcript, setTranscript] = useState<TranscriptUtterance[]>([]);
   const [coverage, setCoverage] = useState<CoverageSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [micMuted, setMicMuted] = useState(false);
+  const [speakerMuted, setSpeakerMuted] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -35,6 +44,21 @@ export function useVoiceAgent() {
   const playingSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const transcriptRef = useRef<TranscriptUtterance[]>([]);
   const patientIdRef = useRef<string>('');
+  const micMutedRef = useRef(false);
+  const speakerMutedRef = useRef(false);
+  const agentSpeakingRef = useRef(false);
+  const masterGainRef = useRef<GainNode | null>(null);
+
+  const toggleMic = useCallback(() => {
+    micMutedRef.current = !micMutedRef.current;
+    setMicMuted(micMutedRef.current);
+  }, []);
+
+  const toggleSpeaker = useCallback(() => {
+    speakerMutedRef.current = !speakerMutedRef.current;
+    setSpeakerMuted(speakerMutedRef.current);
+    if (masterGainRef.current) masterGainRef.current.gain.value = speakerMutedRef.current ? 0 : 1;
+  }, []);
 
   const pushTranscript = useCallback((u: TranscriptUtterance) => {
     transcriptRef.current = [...transcriptRef.current, u];
@@ -45,6 +69,10 @@ export function useVoiceAgent() {
     if (!playCtxRef.current) {
       playCtxRef.current = new AudioContext({ sampleRate: 24000 });
       nextPlayTimeRef.current = 0;
+      const gain = playCtxRef.current.createGain();
+      gain.gain.value = speakerMutedRef.current ? 0 : 1;
+      gain.connect(playCtxRef.current.destination);
+      masterGainRef.current = gain;
     }
     const ctx = playCtxRef.current;
     const pcm16 = new Int16Array(buf);
@@ -55,7 +83,7 @@ export function useVoiceAgent() {
     buffer.copyToChannel(float32, 0);
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(ctx.destination);
+    source.connect(masterGainRef.current ?? ctx.destination);
     const startTime = Math.max(ctx.currentTime, nextPlayTimeRef.current);
     source.start(startTime);
     nextPlayTimeRef.current = startTime + buffer.duration;
@@ -186,7 +214,7 @@ export function useVoiceAgent() {
         if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'KeepAlive' }));
       }, 8000);
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: false } });
         micStreamRef.current = stream;
         const ctx = new AudioContext({ sampleRate: 16000 });
         micCtxRef.current = ctx;
@@ -194,10 +222,23 @@ export function useVoiceAgent() {
         const processor = ctx.createScriptProcessor(4096, 1, 1);
         const zeroGain = ctx.createGain();
         zeroGain.gain.value = 0;
+        const silentFrame = new Int16Array(4096);
         processor.onaudioprocess = (e) => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(floatTo16BitPCM(e.inputBuffer.getChannelData(0)).buffer);
+          if (ws.readyState !== WebSocket.OPEN) return;
+          const data = e.inputBuffer.getChannelData(0);
+          if (micMutedRef.current) {
+            ws.send(silentFrame.buffer.slice(0));
+            return;
           }
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+          const rms = Math.sqrt(sum / data.length);
+          const threshold = agentSpeakingRef.current ? GATE_WHILE_AGENT_SPEAKING : GATE_IDLE;
+          if (rms < threshold) {
+            ws.send(silentFrame.buffer.slice(0));
+            return;
+          }
+          ws.send(floatTo16BitPCM(data).buffer);
         };
         source.connect(processor);
         processor.connect(zeroGain);
@@ -222,12 +263,15 @@ export function useVoiceAgent() {
             break;
           case 'UserStartedSpeaking':
             stopPlayback(); // barge-in
+            agentSpeakingRef.current = false;
             setState('active');
             break;
           case 'AgentStartedSpeaking':
+            agentSpeakingRef.current = true;
             setState('agent_speaking');
             break;
           case 'AgentAudioDone':
+            agentSpeakingRef.current = false;
             setState('active');
             break;
           case 'FunctionCallRequest':
@@ -250,5 +294,5 @@ export function useVoiceAgent() {
     };
   }, [handleFunctionCall, playChunk, pushTranscript, stop, stopPlayback]);
 
-  return { state, transcript, coverage, error, start, stop };
+  return { state, transcript, coverage, error, start, stop, micMuted, speakerMuted, toggleMic, toggleSpeaker };
 }
