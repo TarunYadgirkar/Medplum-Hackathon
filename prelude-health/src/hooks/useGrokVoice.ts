@@ -9,7 +9,7 @@ import { useCallback, useRef, useState } from 'react';
 import { AudioPlaybackQueue, startAudioCapture, type AudioCapture } from '@/lib/audio';
 import type { CoverageSummary, TranscriptUtterance } from '@/types';
 import type { VoiceAgentState } from './useVoiceAgent';
-import { buildEpicContext } from '@/lib/epic-import';
+import { buildEpicContext, importMatchesPatient } from '@/lib/epic-import';
 import { buildMedCardContext, getMedCard, sanitizeField } from '@/lib/medcard';
 import { buildPaceBlock } from '@/lib/agent-config';
 
@@ -126,7 +126,7 @@ export function useGrokVoice() {
           type: 'session.update',
           session: {
             voice: 'eve',
-            instructions: buildPaceBlock(callSeconds) + GROK_INSTRUCTIONS(patientName, appointmentType, [buildEpicContext(), buildMedCardContext(getMedCard())].filter(Boolean).join('\n') || null),
+            instructions: buildPaceBlock(callSeconds) + GROK_INSTRUCTIONS(patientName, appointmentType, [importMatchesPatient(patientName) ? buildEpicContext() : null, buildMedCardContext(getMedCard())].filter(Boolean).join('\n') || null),
             turn_detection: { type: 'server_vad' },
             input_audio_transcription: { model: 'grok-2-audio' },
             audio: {

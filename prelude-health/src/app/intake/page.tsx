@@ -9,7 +9,7 @@ import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useGrokVoice } from '@/hooks/useGrokVoice';
 import { Nav, Btn } from '@/components/primitives';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
-import { getImportedHistoryDocs, getEpicImport, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
+import { getImportedHistoryDocs, getEpicImport, importMatchesPatient, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const OTHER_APPOINTMENT = '__other__';
@@ -96,12 +96,14 @@ export default function IntakePage() {
   const [noteId, setNoteId] = useState<string | null>(null);
   const [chartConnected, setChartConnected] = useState(false);
 
+  // "Connected" only when the imported chart is for THIS name — a leftover
+  // import from a previous patient shows as not connected.
   useEffect(() => {
-    const sync = () => setChartConnected(Boolean(getEpicImport()));
+    const sync = () => setChartConnected(importMatchesPatient(name));
     sync();
     window.addEventListener(RECORDS_CHANGED_EVENT, sync);
     return () => window.removeEventListener(RECORDS_CHANGED_EVENT, sync);
-  }, []);
+  }, [name]);
 
   // Browser back/forward moves between steps instead of leaving the flow.
   const stepRef = useRef<Step>('form');
@@ -142,7 +144,7 @@ export default function IntakePage() {
       const res = await fetch('/api/intake-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientName: name, appointmentType, ageRange, historyDocs: getImportedHistoryDocs() ?? undefined }),
+        body: JSON.stringify({ patientName: name, appointmentType, ageRange, historyDocs: importMatchesPatient(name) ? getImportedHistoryDocs() ?? undefined : undefined }),
       });
       const data = await res.json();
       setSession(data);

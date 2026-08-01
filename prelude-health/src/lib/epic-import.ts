@@ -84,6 +84,18 @@ export function clearEpicImport(): void {
   notifyRecordsChanged();
 }
 
+// True when the imported chart belongs to this patient (or names are close
+// enough): exact case-insensitive match, or matching first name. A chart
+// imported for a previous demo patient must NOT leak into a new patient's call.
+export function importMatchesPatient(patientName: string): boolean {
+  const state = getEpicImport();
+  if (!state) return false;
+  const stored = state.record.patient.name.trim().toLowerCase();
+  const entered = patientName.trim().toLowerCase();
+  if (!stored || !entered) return false;
+  return stored === entered;
+}
+
 export function buildEpicContext(): string | null {
   // try/catch: a stale localStorage entry from an older build can have a
   // different shape — a throw here would kill the voice-call start path.

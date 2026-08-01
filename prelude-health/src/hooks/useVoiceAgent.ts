@@ -7,7 +7,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { AGENT_WS_URL, buildAgentSettings } from '@/lib/agent-config';
 import { floatTo16BitPCM } from '@/lib/audio';
-import { buildEpicContext, getEpicImport } from '@/lib/epic-import';
+import { buildEpicContext, getEpicImport, importMatchesPatient } from '@/lib/epic-import';
 import { buildMedCardContext, getMedCard } from '@/lib/medcard';
 import type { CoverageSummary, TranscriptUtterance } from '@/types';
 
@@ -160,9 +160,12 @@ export function useVoiceAgent() {
     ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
 
-    const chartContext = [buildEpicContext(), buildMedCardContext(getMedCard())].filter(Boolean).join('\n') || null;
-    const epicImport = getEpicImport();
+    // Only use an imported chart that belongs to THIS patient — a record left
+    // over from a previous demo run must not leak into a new patient's call.
+    const chartIsMine = importMatchesPatient(args.patientName);
+    const epicImport = chartIsMine ? getEpicImport() : null;
     const medCard = getMedCard();
+    const chartContext = [chartIsMine ? buildEpicContext() : null, buildMedCardContext(medCard)].filter(Boolean).join('\n') || null;
     const keyterms = [
       ...(epicImport?.record.medications.map((m) => m.name.split(' ')[0]) ?? []),
       ...(epicImport?.record.allergies.map((a) => a.substance) ?? []),
