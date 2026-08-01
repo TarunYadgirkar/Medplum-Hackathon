@@ -64,3 +64,18 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   StatusChip/RiskBadge/BulletList), and all 4 pages routed through tokens/primitives
   with ZERO visual change (verified: build green + smoke.sh all pass). The Claude
   Design language will land as a token+primitive swap. Waiting on design mockups.
+- [10:45] [lane-2] Medplum VERIFIED LIVE end-to-end. Scripted check-in (smoke.sh path) then
+  fetched back via FHIR API: Patient, Encounter (in-progress → finished w/ period.end),
+  DocumentReference (base64 transcript), Composition (SOAP sections + note-json/review-status
+  extensions, flips preliminary → final on review PATCH), RiskAssessment — all present at
+  app.medplum.com. ZERO code changes needed in medplum.ts/store.ts.
+- [10:50] [lane-2] listPatients verified with real data: correct rows (name/call_status/
+  note_status/risk/note_id), ~330-490ms — fast enough, no optimization.
+- [10:55] [lane-2] Added scripts/cleanup-smoke.ts — deletes "Smoke Test" patients + related
+  resources from Medplum (every smoke.sh run leaves one; run before recording the video).
+- [11:05] [lane-2] scripts/seed-demo.ts DONE + run against live Medplum. 3 demo patients on
+  dashboard: Marcus Whitfield (urgent_review/high), Priya Anand (ai_draft/low), Robert Alan
+  Chen (reviewed/medium). Note: RiskLevel enum has no "moderate" — it's "medium".
+  npm run build + smoke.sh green. Lane 2 core tasks (verify Medplum, listPatients, seed) ALL DONE.
+  Before recording video: run `npx tsx scripts/cleanup-smoke.ts` (with .env loaded) to purge
+  "Smoke Test" rows from Medplum — 3 currently on the dashboard.
