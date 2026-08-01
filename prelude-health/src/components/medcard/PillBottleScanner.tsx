@@ -2,9 +2,9 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { Btn, SectionCard } from '@/components/primitives';
-import { getMedCard, saveMedCard } from '@/lib/medcard';
+import { clearMedCard, getMedCard, saveMedCard, sanitizeField, type MedCardData } from '@/lib/medcard';
 
-type ScanState = 'idle' | 'loading' | 'result' | 'unavailable' | 'error';
+type ScanState = 'idle' | 'loading' | 'result' | 'autosaved' | 'unavailable' | 'error';
 
 type ScanResult = {
   medicationName: string;
@@ -28,6 +28,14 @@ const CONFIDENCE_META: Record<ScanResult['confidence'], { cls: string; icon: str
 const INPUT_CLASS =
   'w-full rounded-xl px-3 py-2.5 text-sm bg-surface border border-line text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-light transition-colors';
 
+function formatMed(name: string, dosage: string, frequency: string): string {
+  const cleanName = sanitizeField(name);
+  const cleanDosage = sanitizeField(dosage);
+  const cleanFrequency = sanitizeField(frequency);
+  const parts = [cleanName, cleanDosage].filter(Boolean).join(' ');
+  return cleanFrequency ? `${parts} — ${cleanFrequency}` : parts;
+}
+
 export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [scanState, setScanState] = useState<ScanState>('idle');
@@ -36,6 +44,8 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
   const [confirm, setConfirm] = useState<ConfirmFields>({ medicationName: '', dosage: '', frequency: '' });
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [autoSavedLabel, setAutoSavedLabel] = useState('');
+  const prevCardRef = useRef<MedCardData | null>(null);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,6 +98,17 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
           dosage: result.dosage,
           frequency: result.frequency,
         });
+
+        if (result.confidence === 'high' && result.medicationName.trim()) {
+          const formatted = formatMed(result.medicationName, result.dosage, result.frequency);
+          prevCardRef.current = getMedCard();
+          saveMedCard({ medications: [formatted], allergies: [], conditions: [] });
+          setAutoSavedLabel(formatted);
+          setScanState('autosaved');
+          onSaved?.();
+          return;
+        }
+
         setScanState('result');
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : 'Scan failed — please try again.');
@@ -101,7 +122,7 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
     };
 
     reader.readAsDataURL(file);
-  }, []);
+  }, [onSaved]);
 
   const handleConfirmChange = useCallback(
     (field: keyof ConfirmFields) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,24 +132,33 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
   );
 
   const handleAddToMedCard = useCallback(() => {
-    const name = confirm.medicationName.trim();
-    const dosage = confirm.dosage.trim();
-    const frequency = confirm.frequency.trim();
-    if (!name) return;
+    if (!confirm.medicationName.trim()) return;
 
-    const parts = [name, dosage].filter(Boolean).join(' ');
-    const formatted = frequency ? `${parts} — ${frequency}` : parts;
-
-    const existing = getMedCard();
     saveMedCard({
-      medications: [...(existing?.medications ?? []), formatted],
-      allergies: existing?.allergies ?? [],
-      conditions: existing?.conditions ?? [],
+      medications: [formatMed(confirm.medicationName, confirm.dosage, confirm.frequency)],
+      allergies: [],
+      conditions: [],
     });
 
     setSaved(true);
     onSaved?.();
   }, [confirm, onSaved]);
+
+  const handleUndoAutoSave = useCallback(() => {
+    const prev = prevCardRef.current;
+    clearMedCard();
+    if (prev) {
+      saveMedCard({
+        medications: prev.medications,
+        allergies: prev.allergies,
+        conditions: prev.conditions,
+      });
+    }
+    prevCardRef.current = null;
+    setAutoSavedLabel('');
+    setScanState('result');
+    onSaved?.();
+  }, [onSaved]);
 
   const handleReset = useCallback(() => {
     setScanState('idle');
@@ -137,6 +167,8 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
     setConfirm({ medicationName: '', dosage: '', frequency: '' });
     setErrorMsg(null);
     setSaved(false);
+    setAutoSavedLabel('');
+    prevCardRef.current = null;
     if (inputRef.current) inputRef.current.value = '';
   }, []);
 
@@ -218,6 +250,53 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
           <Btn variant="secondary" className="self-start px-5 py-2.5 text-sm" onClick={handleReset}>
             Back
           </Btn>
+        </div>
+      )}
+
+      {scanState === 'autosaved' && (
+        <div className="flex flex-col gap-3">
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3"
+          >
+            {preview && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={preview}
+                alt="Scanned pill bottle"
+                className="h-12 w-12 shrink-0 rounded-lg object-cover border border-emerald-200"
+              />
+            )}
+            <div className="flex flex-col gap-0.5">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Added to your MedCard
+              </p>
+              <p className="text-xs text-emerald-600">{autoSavedLabel}</p>
+              <p className="mt-0.5 text-xs text-emerald-600/80">
+                Saved automatically — the label was read with high confidence.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Btn variant="secondary" className="px-5 py-2.5 text-sm" onClick={handleUndoAutoSave}>
+              Undo &amp; edit
+            </Btn>
+            <Btn variant="secondary" className="px-5 py-2.5 text-sm" onClick={handleReset}>
+              Scan another bottle
+            </Btn>
+          </div>
         </div>
       )}
 

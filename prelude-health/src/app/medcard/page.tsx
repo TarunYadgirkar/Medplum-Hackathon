@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Nav, SectionCard, Btn } from '@/components/primitives';
 import { MedCard } from '@/components/medcard/MedCard';
 import { PillBottleScanner } from '@/components/medcard/PillBottleScanner';
+import { VoiceMedEntry } from '@/components/medcard/VoiceMedEntry';
 import { ManualMedForm } from '@/components/medcard/ManualMedForm';
+import { TrialMatches } from '@/components/medcard/TrialMatches';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { getMedCard, clearMedCard, type MedCardData } from '@/lib/medcard';
 
@@ -78,12 +80,24 @@ export default function MedCardPage() {
           <div className="flex items-center gap-4" aria-hidden="true">
             <div className="h-px flex-1 bg-line" />
             <span className="text-xs font-bold uppercase tracking-widest text-faint">
+              or describe by voice
+            </span>
+            <div className="h-px flex-1 bg-line" />
+          </div>
+
+          <VoiceMedEntry onSaved={refresh} />
+
+          <div className="flex items-center gap-4" aria-hidden="true">
+            <div className="h-px flex-1 bg-line" />
+            <span className="text-xs font-bold uppercase tracking-widest text-faint">
               or add manually
             </span>
             <div className="h-px flex-1 bg-line" />
           </div>
 
           <ManualMedForm onSaved={refresh} />
+
+          <TrialMatches />
 
           <div className="flex justify-center">
             <Btn variant="secondary" className="px-5 py-2.5 text-sm" onClick={refresh}>

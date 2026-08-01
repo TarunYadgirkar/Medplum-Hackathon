@@ -237,3 +237,17 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   engines (probe-verified schema). Agent calls it after recap+goodbye or when patient
   says they're done → goodbye audio finishes → visit charts automatically (7s safety
   timeout). Manual End Check-in button still works.
+- [medcard] MedCard UX upgrade: (1) NEW voice med entry (VoiceMedEntry.tsx) — Web Speech
+  API (feature-detected, friendly unsupported state), live interim transcript, editable
+  transcript textarea → "Extract medications" → scan-label route NEW text mode → editable
+  multi-med confirm list → sanitizeField + saveMedCard merge. (2) Pill scanner: high-
+  confidence scans now AUTO-SAVE with success row + "Undo & edit" (previous card kept in
+  a ref, restored via clear+resave; undo drops into the normal confirm form). Medium/low
+  keeps confirm form. (3) scan-label route accepts {image} OR {text: 1-2000 chars};
+  text mode returns {available:true, medications:[...]} (array), image mode response
+  shape unchanged; keyless → {available:false, reason:'no key'} preserved. (4) NEW
+  Clinical Trials block (TrialMatches.tsx + /api/trials): lazy "Check trial eligibility"
+  button scans med card + Epic-imported conditions, gpt-4o-mini or keyword fallback,
+  search URLs rebuilt server-side (clinicaltrials.gov only, client re-validates host),
+  mandatory not-medical-advice disclaimer. build + tsc green. smoke.sh not run (per
+  task instruction).
