@@ -193,10 +193,16 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
       {/* ── Nav ── */}
       <Nav
         right={
-          <Link href="/dashboard" className="flex items-center gap-2 text-[11px] font-bold text-body hover:text-ink transition-colors">
-            <Icon name="west" className="text-[18px]" />
-            Dashboard
-          </Link>
+          <div className="flex items-center gap-5">
+            <Link href={`/dashboard/patient/${note.patient_id}`} className="flex items-center gap-2 text-[11px] font-bold text-body hover:text-ink transition-colors">
+              <Icon name="person" className="text-[18px]" />
+              Patient chart
+            </Link>
+            <Link href="/dashboard" className="flex items-center gap-2 text-[11px] font-bold text-body hover:text-ink transition-colors">
+              <Icon name="west" className="text-[18px]" />
+              Dashboard
+            </Link>
+          </div>
         }
       />
 

@@ -269,7 +269,7 @@ export default function DashboardPage() {
                   <div className="hidden sm:grid sm:grid-cols-[40px_1.8fr_1.6fr_1.1fr_.7fr_84px] sm:gap-4 sm:items-center">
                     <Icon name={icon} className={`text-[24px] ${tone.color} ${tone.pulse ? 'animate-pulse' : ''}`} />
                     <div className="min-w-0">
-                      <p className="font-extrabold text-ink truncate">{patient.name}</p>
+                      <p className="font-extrabold text-ink truncate"><Link href={`/dashboard/patient/${patient.id}`} className="hover:text-brand transition-colors">{patient.name}</Link></p>
                       <p className="text-[10px] font-semibold uppercase tracking-[.14em] text-faint mt-1">{formattedDate}</p>
                     </div>
                     <span className="flex items-center gap-2 text-sm text-body truncate">
@@ -290,7 +290,7 @@ export default function DashboardPage() {
                       <div className="flex items-start gap-3 min-w-0">
                         <Icon name={icon} className={`text-[22px] mt-0.5 ${tone.color} ${tone.pulse ? 'animate-pulse' : ''} shrink-0`} />
                         <div className="min-w-0">
-                          <p className="font-extrabold text-ink truncate">{patient.name}</p>
+                          <p className="font-extrabold text-ink truncate"><Link href={`/dashboard/patient/${patient.id}`} className="hover:text-brand transition-colors">{patient.name}</Link></p>
                           <p className="text-[10px] font-semibold uppercase tracking-[.14em] text-faint mt-1 truncate">
                             {formattedDate} · {patient.appointment_type}
                           </p>
