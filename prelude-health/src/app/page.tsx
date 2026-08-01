@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Icon } from '@/components/primitives';
 import CoverageBot from '@/components/coverage-bot/CoverageBot';
+import VoiceOrb from '@/components/voice-orb/VoiceOrb';
 
 const PIPELINE = [
   { icon: 'mic', label: 'Talk', vendor: 'Deepgram' },
@@ -104,18 +105,7 @@ export default function Home() {
         {/* Right: voice visual */}
         <div className="relative flex flex-col min-h-[420px] lg:min-h-0">
           <div className="relative flex-1 bg-gradient-to-br from-ink via-[#3a1f1c] to-[#6b2f22] overflow-hidden flex items-center justify-center">
-            <div
-              className="absolute w-[220px] h-[220px] rounded-full blur-2xl opacity-70 hero-orb"
-              style={{ background: 'radial-gradient(circle, rgba(232,178,84,.4), rgba(168,52,43,.2) 52%, transparent 70%)' }}
-              aria-hidden
-            />
-            <div className="relative w-[180px] h-[180px] sm:w-[220px] sm:h-[220px] rounded-full bg-bright shadow-[0_0_0_1px_rgba(252,251,247,.25),0_24px_60px_rgba(0,0,0,.4)] overflow-hidden flex items-center justify-center animate-breathe">
-              <div className="flex items-end gap-1.5 h-14" aria-hidden>
-                {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                  <span key={i} className="voice-bar w-2 h-full bg-brand inline-block" />
-                ))}
-              </div>
-            </div>
+            <VoiceOrb mode="sim" size={220} className="scale-[.82] sm:scale-100" />
             <span className="absolute left-5 bottom-5 flex items-center gap-2 text-[9.5px] font-semibold uppercase tracking-[.2em] text-bright/70">
               <Icon name="hearing" className="text-[16px]" />
               Listening

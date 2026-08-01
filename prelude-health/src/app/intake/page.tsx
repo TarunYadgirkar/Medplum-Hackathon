@@ -12,6 +12,7 @@ import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useGrokVoice } from '@/hooks/useGrokVoice';
 import { Nav, Btn, Icon } from '@/components/primitives';
 import CoverageBot from '@/components/coverage-bot/CoverageBot';
+import VoiceOrb from '@/components/voice-orb/VoiceOrb';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { getImportedHistoryDocs, getEpicImport, importMatchesPatient, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
 import { CARRIERS } from '@/data/insurance-plans';
@@ -85,14 +86,9 @@ function VoiceStage({ state }: { state: string }) {
           <Icon name="check" className="text-[34px] text-bright" />
         </div>
       ) : (
-        <div className="relative w-40 h-40">
-          <div className="absolute -inset-8 rounded-full bg-brand-accent/25 blur-2xl animate-breathe" aria-hidden />
-          <div className={`relative w-40 h-40 rounded-full bg-bright overflow-hidden shadow-[0_0_0_1px_var(--color-line),0_24px_60px_rgba(0,0,0,.4)] ${state === 'connecting' ? 'animate-breathe' : ''}`}>
-            <div className="absolute w-28 h-28 -left-4 -top-2 rounded-full bg-brand/80 blur-xl" aria-hidden />
-            <div className="absolute w-24 h-24 right-0 top-9 rounded-full bg-danger/70 blur-xl" aria-hidden />
-            <div className="absolute w-24 h-24 left-4 -bottom-2 rounded-full bg-caution/80 blur-xl" aria-hidden />
-          </div>
-        </div>
+        // Live mic drives the orb: it moves with the caller's voice (and picks
+        // up the agent's speech from the speakers). Sim fallback if mic denied.
+        <VoiceOrb mode="mic" size={165} intensity={state === 'connecting' ? 0.5 : 1} className="scale-90 sm:scale-100" />
       )}
 
       <span className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 text-[9.5px] font-bold uppercase tracking-[.2em] text-bright/80">
