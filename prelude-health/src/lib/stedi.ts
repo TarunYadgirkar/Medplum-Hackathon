@@ -2,7 +2,8 @@
 // Docs: https://www.stedi.com/docs/healthcare/send-eligibility-checks
 //       https://www.stedi.com/docs/healthcare/api-reference/mock-requests-eligibility-checks
 // Test mode is free, uses mock payers, and never touches real PHI.
-import { syntheticPricing, DEFAULT_PLAN_KEY } from '@/data/synthetic-pricing';
+import { syntheticPricing } from '@/data/synthetic-pricing';
+import { resolveCarrierPlan, type InsurancePlanOption } from '@/data/insurance-plans';
 import type { CareLevel, CoverageSummary } from '@/types';
 
 const STEDI_URL = 'https://healthcare.us.stedi.com/2024-04-01/change/medicalnetwork/eligibility/v3';
@@ -29,7 +30,8 @@ const CARE_LEVEL_TO_BASE_COST: Record<CareLevel, { min: number; max: number }> =
 };
 
 interface EligibilityArgs {
-  payerKey?: string; // UHC | CIGNA | AETNA | CMS
+  payerKey?: string; // UHC | CIGNA | AETNA | BCBS | KAISER | MEDICARE | MEDICAID (legacy: CMS)
+  planId?: string; // plan id from insurance-plans.ts; missing → carrier's first plan
   memberId?: string;
   firstName?: string;
   lastName?: string;
@@ -37,12 +39,14 @@ interface EligibilityArgs {
 }
 
 export async function checkEligibility(args: EligibilityArgs): Promise<CoverageSummary> {
-  const payer = MOCK_PAYERS[args.payerKey || 'UHC'] || MOCK_PAYERS.UHC;
+  const { carrier, plan } = resolveCarrierPlan(args.payerKey, args.planId);
+  const displayName = `${carrier.name} ${plan.name}`;
   const careLevel: CareLevel = args.careLevel || 'primary_care';
   const baseCost = CARE_LEVEL_TO_BASE_COST[careLevel];
+  const payer = carrier.stediPayerKey ? MOCK_PAYERS[carrier.stediPayerKey] : undefined;
 
-  if (!process.env.STEDI_API_KEY) {
-    return syntheticCoverage(careLevel, baseCost, args.payerKey);
+  if (!process.env.STEDI_API_KEY || !payer) {
+    return simulatedCoverage(displayName, plan, careLevel, baseCost);
   }
 
   try {
@@ -68,10 +72,10 @@ export async function checkEligibility(args: EligibilityArgs): Promise<CoverageS
     });
     if (!res.ok) throw new Error(`Stedi ${res.status}: ${await res.text()}`);
     const data = await res.json();
-    return parseStediResponse(data, payer.name, careLevel, baseCost);
+    return parseStediResponse(data, displayName, careLevel, baseCost);
   } catch (err) {
     console.error('Stedi eligibility failed, using synthetic fallback:', err);
-    return syntheticCoverage(careLevel, baseCost, args.payerKey);
+    return simulatedCoverage(displayName, plan, careLevel, baseCost);
   }
 }
 
@@ -134,34 +138,39 @@ export function parseStediResponse(
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-// Keyless mode still reflects the patient's chosen insurer — typical plan
-// profiles per payer so the demo shows different numbers per selection.
-const SYNTHETIC_PAYER_PROFILES: Record<string, { name: string; copayDelta: number; deductibleRemaining: number; coinsurancePct: number }> = {
-  UHC:   { name: 'UnitedHealthcare Choice Plus', copayDelta: 0,   deductibleRemaining: 750,  coinsurancePct: 20 },
-  CIGNA: { name: 'Cigna Open Access Plus',       copayDelta: 5,   deductibleRemaining: 1200, coinsurancePct: 20 },
-  AETNA: { name: 'Aetna Managed Choice',         copayDelta: -5,  deductibleRemaining: 500,  coinsurancePct: 15 },
-  CMS:   { name: 'Medicare Part B',              copayDelta: -15, deductibleRemaining: 120,  coinsurancePct: 20 },
-};
+// Keyless mode (or live-call failure): build a simulated 271 response shaped
+// exactly like Stedi's documented example (benefitsInformation codes 1/B/C/A,
+// network + coverage-level indicators) from the selected plan's profile, then
+// run it through the same parser the live path uses.
+function simulatedCoverage(
+  payerName: string,
+  plan: InsurancePlanOption,
+  careLevel: CareLevel,
+  baseCost: { min: number; max: number }
+): CoverageSummary {
+  const copay = plan.copays[careLevel === 'self_care' ? 'telehealth' : careLevel];
+  const serviceTypeCodes =
+    careLevel === 'urgent_care' ? ['UC'] : careLevel === 'emergency_room' ? ['86'] : ['98']; // 98 = office visit
+  const common = { inPlanNetworkIndicatorCode: 'Y', coverageLevelCode: 'IND', serviceTypeCodes };
 
-function syntheticCoverage(careLevel: CareLevel, baseCost: { min: number; max: number }, payerKey?: string): CoverageSummary {
-  const plan = syntheticPricing.plans[DEFAULT_PLAN_KEY];
-  const profile = SYNTHETIC_PAYER_PROFILES[payerKey || 'UHC'] || SYNTHETIC_PAYER_PROFILES.UHC;
-  const baseCopay =
-    careLevel === 'telehealth' ? plan.telehealthCopay :
-    careLevel === 'urgent_care' ? plan.urgentCareCopay :
-    careLevel === 'emergency_room' ? plan.erCopay :
-    plan.pcpCopay;
-  const copay = Math.max(0, baseCopay + profile.copayDelta);
-  return {
-    source: 'synthetic',
-    payer: profile.name,
-    plan_status: 'Active Coverage',
-    copay,
-    coinsurance_percent: profile.coinsurancePct,
-    deductible_remaining: profile.deductibleRemaining,
-    estimated_visit_cost: baseCost,
-    spoken_summary: `Based on a typical ${profile.name} plan, expect about a $${copay} copay for a ${careLevel.replace('_', ' ')} visit (typical total cost $${baseCost.min}–$${baseCost.max}).`,
-  };
+  const benefitsInformation = [
+    { code: '1', name: 'Active Coverage', serviceTypeCodes: ['30'], insuranceTypeCode: 'C1', planCoverage: payerName },
+    ...(copay != null
+      ? [{ code: 'B', name: 'Co-Payment', benefitAmount: String(copay), timeQualifierCode: '27', ...common }]
+      : []),
+    ...(plan.deductibleRemaining > 0
+      ? [
+          { code: 'C', name: 'Deductible', benefitAmount: String(plan.deductibleRemaining), timeQualifierCode: '29', ...common },
+          { code: 'C', name: 'Deductible', benefitAmount: String(plan.deductibleRemaining), timeQualifierCode: '23', ...common },
+        ]
+      : []),
+    ...(plan.coinsurancePct > 0
+      ? [{ code: 'A', name: 'Co-Insurance', benefitPercent: (plan.coinsurancePct / 100).toFixed(2), ...common }]
+      : []),
+  ];
+
+  const parsed = parseStediResponse({ benefitsInformation }, payerName, careLevel, baseCost);
+  return { ...parsed, source: 'synthetic' };
 }
 
 function estimateOutOfPocket(

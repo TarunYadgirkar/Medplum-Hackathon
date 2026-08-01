@@ -205,3 +205,13 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   (6a-6b, mounted on landing + intake done + note page) and /dashboard/patient/[id] chart
   with timeline + calendar + skeleton/empty states (6c-6e); ChartTimeline on /records
   restyled to tokens. ALL logic/contracts untouched. build + smoke.sh green.
+- [lane-3] Insurance upgraded to carrier+plan model: new src/data/insurance-plans.ts
+  (7 carriers, real plan names — UHC Choice Plus/Options PPO/Navigate HMO, Cigna OAP/
+  LocalPlus/SureFit, Aetna Open Choice PPO/Managed Choice POS/Select, BCBS BlueCard PPO/
+  Blue Choice, Kaiser Traditional/Deductible HMO, Medicare Part B/Advantage, Medicaid MC).
+  Keyless path in stedi.ts now builds a per-plan simulated 271 (codes 1/B/C/A, network
+  indicators) and runs it through the SAME parseStediResponse as live — source stays
+  'synthetic'. planId flows intake page (carrier+plan selects, prelude-plan localStorage)
+  → both voice hooks → /api/eligibility + /api/generate-note. payerKey enum widened
+  (legacy CMS still accepted → Medicare). Missing planId → carrier's first plan.
+  build + tsc + smoke.sh green; curled BCBS/Kaiser/Medicare/Medicaid/CMS all correct.

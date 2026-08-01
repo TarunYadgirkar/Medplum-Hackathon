@@ -94,6 +94,7 @@ export function useVoiceAgent() {
             body: JSON.stringify({
               careLevel: parsedArgs.care_level || 'primary_care',
               payerKey: localStorage.getItem('prelude-payer') || undefined,
+              planId: localStorage.getItem('prelude-plan') || undefined,
             }),
           });
           const data: CoverageSummary = await res.json();

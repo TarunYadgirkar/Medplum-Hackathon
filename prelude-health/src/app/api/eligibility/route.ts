@@ -5,7 +5,8 @@ import type { CareLevel } from '@/types';
 
 const Schema = z.object({
   careLevel: z.enum(['self_care', 'telehealth', 'primary_care', 'urgent_care', 'emergency_room']).optional(),
-  payerKey: z.enum(['UHC', 'CIGNA', 'AETNA', 'CMS']).optional(),
+  payerKey: z.enum(['UHC', 'CIGNA', 'AETNA', 'BCBS', 'KAISER', 'MEDICARE', 'MEDICAID', 'CMS']).optional(),
+  planId: z.string().max(60).optional(),
   memberId: z.string().max(80).optional(),
   firstName: z.string().max(80).optional(),
   lastName: z.string().max(80).optional(),
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
   }
   const coverage = await checkEligibility({
     payerKey: parsed.data.payerKey,
+    planId: parsed.data.planId,
     memberId: parsed.data.memberId,
     firstName: parsed.data.firstName,
     lastName: parsed.data.lastName,

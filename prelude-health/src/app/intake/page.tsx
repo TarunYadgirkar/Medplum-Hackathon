@@ -14,6 +14,7 @@ import { Nav, Btn, Icon } from '@/components/primitives';
 import CoverageBot from '@/components/coverage-bot/CoverageBot';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { getImportedHistoryDocs, getEpicImport, importMatchesPatient, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
+import { CARRIERS } from '@/data/insurance-plans';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const OTHER_APPOINTMENT = '__other__';
@@ -108,6 +109,7 @@ export default function IntakePage() {
   const [appointmentType, setAppointmentType] = useState('Sick visit');
   const [isCustomAppointment, setIsCustomAppointment] = useState(false);
   const [payerKey, setPayerKey] = useState('UHC');
+  const [planId, setPlanId] = useState(CARRIERS[0].plans[0].id);
   const [callLengthIdx, setCallLengthIdx] = useState(2);
   const [ageRange, setAgeRange] = useState('');
   const [consented, setConsented] = useState(false);
@@ -169,8 +171,13 @@ export default function IntakePage() {
   const beginCheckIn = useCallback(async () => {
     setLoading(true);
     try {
-      if (payerKey === 'NONE') localStorage.removeItem('prelude-payer');
-      else localStorage.setItem('prelude-payer', payerKey);
+      if (payerKey === 'NONE') {
+        localStorage.removeItem('prelude-payer');
+        localStorage.removeItem('prelude-plan');
+      } else {
+        localStorage.setItem('prelude-payer', payerKey);
+        localStorage.setItem('prelude-plan', planId);
+      }
       const res = await fetch('/api/intake-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -193,7 +200,7 @@ export default function IntakePage() {
     } finally {
       setLoading(false);
     }
-  }, [name, appointmentType, ageRange, payerKey, callLengthIdx, grok, deepgram, goToStep]);
+  }, [name, appointmentType, ageRange, payerKey, planId, callLengthIdx, grok, deepgram, goToStep]);
 
   const finishCall = useCallback(async (transcriptText?: string) => {
     if (!session) return;
@@ -210,6 +217,7 @@ export default function IntakePage() {
           encounterId: session.encounterId,
           patientName: name,
           payerKey: payerKey === 'NONE' ? undefined : payerKey,
+          planId: payerKey === 'NONE' ? undefined : planId,
         }),
       });
       const data = await res.json();
@@ -220,7 +228,7 @@ export default function IntakePage() {
       setFinishing(false);
       goToStep('complete');
     }
-  }, [session, stop, name, payerKey, goToStep]);
+  }, [session, stop, name, payerKey, planId, goToStep]);
 
   const stepIdx = STEP_INDEX[step];
 
@@ -344,23 +352,45 @@ export default function IntakePage() {
                       </div>
                     </div>
 
-                    {/* Insurance */}
+                    {/* Insurance: carrier + plan */}
                     <div>
-                      <div className="flex border border-line bg-bright transition-colors duration-200 hover:border-ink focus-within:border-ink">
-                        <span className="w-[52px] flex-none flex items-center justify-center bg-ink/5 text-ink">
-                          <Icon name="shield" className="text-[21px]" />
-                        </span>
-                        <div className="relative flex-1 px-4 py-2.5">
-                          <FieldLabel>Insurance</FieldLabel>
-                          <select value={payerKey} onChange={(e) => setPayerKey(e.target.value)} className={selectCls}>
-                            <option value="UHC">UnitedHealthcare</option>
-                            <option value="CIGNA">Cigna</option>
-                            <option value="AETNA">Aetna</option>
-                            <option value="CMS">Medicare</option>
-                            <option value="NONE">Self-pay / not sure</option>
-                          </select>
-                          {chev}
+                      <div className="grid sm:grid-cols-2 gap-3.5">
+                        <div className="flex border border-line bg-bright transition-colors duration-200 hover:border-ink focus-within:border-ink">
+                          <span className="w-[52px] flex-none flex items-center justify-center bg-ink/5 text-ink">
+                            <Icon name="shield" className="text-[21px]" />
+                          </span>
+                          <div className="relative flex-1 px-4 py-2.5">
+                            <FieldLabel>Insurance</FieldLabel>
+                            <select value={payerKey}
+                              onChange={(e) => {
+                                const key = e.target.value;
+                                setPayerKey(key);
+                                const carrier = CARRIERS.find((c) => c.key === key);
+                                if (carrier) setPlanId(carrier.plans[0].id);
+                              }}
+                              className={selectCls}>
+                              {CARRIERS.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}
+                              <option value="NONE">Self-pay / not sure</option>
+                            </select>
+                            {chev}
+                          </div>
                         </div>
+                        {payerKey !== 'NONE' && (
+                          <div className="flex border border-line bg-bright transition-colors duration-200 hover:border-ink focus-within:border-ink">
+                            <span className="w-[52px] flex-none flex items-center justify-center bg-ink/5 text-ink">
+                              <Icon name="assignment" className="text-[21px]" />
+                            </span>
+                            <div className="relative flex-1 px-4 py-2.5">
+                              <FieldLabel>Plan</FieldLabel>
+                              <select value={planId} onChange={(e) => setPlanId(e.target.value)} className={selectCls}>
+                                {(CARRIERS.find((c) => c.key === payerKey)?.plans ?? []).map((p) => (
+                                  <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                              </select>
+                              {chev}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <p className="mt-1.5 text-xs text-faint">Used when you ask Prelude what your visit will cost.</p>
                     </div>
