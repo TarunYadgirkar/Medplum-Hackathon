@@ -16,15 +16,19 @@ const Schema = z.object({
 // Starts an intake: creates the FHIR Patient + Encounter in Medplum and
 // seeds the Moss history index so the agent can retrieve context mid-call.
 export async function POST(req: NextRequest) {
-  const parsed = Schema.safeParse(await req.json());
+  const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
-  const { patientName, appointmentType, ageRange, historyDocs } = parsed.data;
+  const { appointmentType, ageRange, historyDocs } = parsed.data;
+  const patientName = sanitizeField(parsed.data.patientName);
+  if (!patientName) {
+    return NextResponse.json({ error: 'Invalid input', details: 'patientName empty after sanitization' }, { status: 400 });
+  }
 
   const { patientId, encounterId } = await createIntake({
     name: patientName,
-    appointmentType,
+    appointmentType: appointmentType ? sanitizeField(appointmentType) : appointmentType,
     ageRange,
   });
 
