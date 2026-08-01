@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* ── Design-language tokens ─────────────────────────────────────────────
+   The Claude Design language lands HERE first: swap these values and every
+   token-routed utility (bg-brand, text-ink, border-line, …) follows.
+   Keep names semantic — no color words on the left side. */
+@theme {
+  --color-brand: #00b894;
+  --color-brand-dark: #00897b;
+  --color-brand-accent: #00ceb8;
+  --color-brand-light: #e6faf6;
+
+  --color-ink: #0f172a;
+  --color-body: #64748b;
+  --color-faint: #94a3b8;
+  --color-line: #e2e8f0;
+  --color-surface: #f8fafc;
+}
+
 :root {
   /* Brand */
   --teal: #00B894;
