@@ -238,12 +238,24 @@ careLevel} → CoverageSummary). No new API needed.
 
 ---
 
-## 6. Patient chart — timeline / calendar (NEW)
+## 6. Patient chart — timeline / calendar
 
-Purpose: the provider-side "this is a real FHIR record" moment — one patient's full
-history as a browsable chart. Suggested route: `/dashboard/patient/[patientId]`,
-entered by clicking the patient's name in the queue and from a link in the note
-review header.
+STATUS: a first timeline ALREADY EXISTS — `src/components/records/ChartTimeline.tsx`
+rendered on the patient-facing `/records` page (fed by the Epic MyChart import).
+It is a month-grouped vertical list: group header (month-year label + thin rule +
+event-count pill), a thin spine with colored event dots, and per-event rows
+(short day label + title + optional flag chip + one-line detail). Event types it
+already renders: Encounter, Lab result (normal/warn/alert flags), Medication start,
+Allergy recorded, Condition diagnosed; undated items fall into an "Earlier" group.
+The design language should restyle THIS component, and the additions below extend it.
+
+Two surfaces share the chart components:
+- **Patient-facing** `/records`: empty state ("No records yet" + connect-records
+  CTA), then patient name header + SectionCards (Medications / Allergies /
+  Lab Results / Recent Encounters) + the Chart Timeline.
+- **Provider-facing** (NEW): suggested route `/dashboard/patient/[patientId]`,
+  entered by clicking the patient's name in the queue and from a link in the note
+  review header.
 
 Regions, top to bottom:
 1. **Nav**: provider nav shell + "‹ Queue" back link.
@@ -252,21 +264,20 @@ Regions, top to bottom:
    date), actions: primary "Open latest note →", secondary "New intake".
 3. **View toggle**: segmented control — **Timeline | Calendar** (Timeline default).
 4. **Filter chip row** (multi-select, horizontally scrollable on mobile): All /
-   Visits / Notes / Medications / Allergies / Coverage checks. Active-filter state
-   must be obvious; counts per type optional.
+   Visits / Notes / Labs / Medications / Allergies / Conditions / Coverage checks.
+   Active-filter state must be obvious; counts per type optional.
 
-### Timeline view (default — the demo hero here)
-- Vertical spine, **newest first**, entries grouped under month labels; a "Today"
-  marker at the top when applicable.
-- **Timeline entry** anatomy: date node on the spine + event card containing:
-  event-type icon tile, title (e.g. "Sick visit — itchy rash"), one-line summary,
-  contextual badges (risk level, note status), and a trailing action when linkable
-  ("Open note →" for notes/visits).
-- Event types needing distinct-but-related treatments: **Visit/Encounter**,
-  **AI note**, **Medication**, **Allergy** (persistent facts — consider pinning
-  allergies above the timeline as an always-visible strip), **Coverage check**,
-  **Risk flag**.
-- Entry cards animate in with stagger on load/filter change.
+### Timeline view (default — the demo hero here; extends the existing ChartTimeline)
+- Keep the existing anatomy: vertical spine, **newest first**, month-group headers
+  (label + rule + count pill), event dot per entry, day label + title + optional
+  flag chip + detail line; undated → "Earlier" group. Add a "Today" marker when
+  applicable.
+- Event types needing distinct-but-related dot/chip treatments (7): **Encounter/
+  Visit**, **AI note** (NEW — links "Open note →"), **Lab result** (3 flag states:
+  normal / warn / alert), **Medication**, **Allergy** (persistent facts — consider
+  ALSO pinning allergies above the timeline as an always-visible strip),
+  **Condition**, **Coverage check** (NEW).
+- Entries animate in with stagger on load/filter change.
 
 ### Calendar view
 - Month grid with weekday header row; prev / next month + "jump to today" controls;
@@ -282,11 +293,12 @@ Page states: loading skeleton (header + 3 ghost entries), empty ("No history yet
 for this patient" + "Start an intake →"), single-event, dense (10+ events — spine
 must stay readable).
 
-Data note: events derive from the patient's FHIR record (Encounters, Compositions/
-notes, MedicationRequest, AllergyIntolerance — lane-2 already builds these for Moss
-history). OPEN ASK to Lane 2: a `GET /api/patients/[id]/events` endpoint; until it
-exists the page can assemble from `/api/patients` + `/api/notes/[id]` with the demo
-history entries.
+Data note: patient-facing `/records` is fed by the Epic MyChart import result
+(already implemented). Provider-facing events derive from the patient's FHIR record
+(Encounters, Compositions/notes, MedicationRequest, AllergyIntolerance — lane-2
+already builds these for Moss history). OPEN ASK to Lane 2: a
+`GET /api/patients/[id]/events` endpoint; until it exists the provider page can
+assemble from `/api/patients` + `/api/notes/[id]` + the import record.
 
 ---
 
