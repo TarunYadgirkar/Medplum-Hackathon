@@ -144,3 +144,14 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   left per MVP scope: no auth on patientId routes, no abort guards on scanner/communities
   fetches. Deployed: prelude-health.vercel.app (Vercel project linked to GitHub, root
   prelude-health, auto-deploy on main). Vercel env vars pending Tarun (fresh OpenAI key!).
+
+- [11:50] [lane-1/review] Full 3-agent review (security/react/ts) of the carepath-port layer
+  (epic import, medcard scanner, records, communities) — no CRITICAL. Fixed + pushed (155e1c4,
+  ee72757 w/ concurrent session): server-side sanitizeField on historyDocs[]/patientName/
+  appointmentType in intake-session route (public POST was injectable into voice prompt + SOAP
+  note), try/catch guards on buildEpicContext/getImportedHistoryDocs/buildMedCardContext (stale
+  localStorage shape threw inside voice start() and leaked the WS), req.json().catch, root
+  .gitignore for .vercel/. Build + smoke green, smoke rows cleaned from Medplum. STILL OPEN:
+  OPENAI_API_KEY revoked (401 — blocks generate-note/scan-label/communities; Tarun supplying),
+  STEDI_API_KEY missing, scan-label 8MB zod limit vs ~4.5MB Vercel body cap, no rate limiting
+  on new OpenAI-backed routes, old Deepgram/Medplum/Moss keys unrotated.
