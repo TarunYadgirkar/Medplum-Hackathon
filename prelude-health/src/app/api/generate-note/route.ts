@@ -40,6 +40,7 @@ const Schema = z.object({
   patientId: z.string().min(1).max(200),
   encounterId: z.string().min(1).max(200),
   patientName: z.string().max(200).optional(),
+  payerKey: z.enum(['UHC', 'CIGNA', 'AETNA', 'CMS']).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
-  const { transcript, patientId, encounterId, patientName } = parsed.data;
+  const { transcript, patientId, encounterId, patientName, payerKey } = parsed.data;
 
   // 1. Persist transcript + close the FHIR Encounter.
   await completeIntake({ patientId, encounterId, transcript });
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
   const [firstName, ...rest] = (patientName || 'Jane Doe').split(/\s+/);
   const coverage = await checkEligibility({
     careLevel: result.care_recommendation?.care_level || 'primary_care',
+    payerKey,
     firstName,
     lastName: rest.join(' ') || 'Doe',
   });

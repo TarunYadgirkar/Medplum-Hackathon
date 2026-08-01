@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Nav, SectionCard, Btn } from '@/components/primitives';
 import { MedCard } from '@/components/medcard/MedCard';
 import { PillBottleScanner } from '@/components/medcard/PillBottleScanner';
+import { ManualMedForm } from '@/components/medcard/ManualMedForm';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { getMedCard, clearMedCard, type MedCardData } from '@/lib/medcard';
 
@@ -73,6 +74,16 @@ export default function MedCardPage() {
           </div>
 
           <PillBottleScanner onSaved={refresh} />
+
+          <div className="flex items-center gap-4" aria-hidden="true">
+            <div className="h-px flex-1 bg-line" />
+            <span className="text-xs font-bold uppercase tracking-widest text-faint">
+              or add manually
+            </span>
+            <div className="h-px flex-1 bg-line" />
+          </div>
+
+          <ManualMedForm onSaved={refresh} />
 
           <div className="flex justify-center">
             <Btn variant="secondary" className="px-5 py-2.5 text-sm" onClick={refresh}>

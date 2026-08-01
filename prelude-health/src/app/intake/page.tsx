@@ -12,6 +12,7 @@ import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecor
 import { getImportedHistoryDocs, getEpicImport, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
+const OTHER_APPOINTMENT = '__other__';
 const STEPS = ['Form', 'Consent', 'Check-in', 'Done'];
 const STEP_INDEX: Record<Step, number> = { form: 0, consent: 1, calling: 2, complete: 3 };
 
@@ -75,6 +76,8 @@ export default function IntakePage() {
   const [step, setStep] = useState<Step>('form');
   const [name, setName] = useState('');
   const [appointmentType, setAppointmentType] = useState('Sick visit');
+  const [isCustomAppointment, setIsCustomAppointment] = useState(false);
+  const [payerKey, setPayerKey] = useState('UHC');
   const [ageRange, setAgeRange] = useState('');
   const [consented, setConsented] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -102,6 +105,8 @@ export default function IntakePage() {
   const beginCheckIn = useCallback(async () => {
     setLoading(true);
     try {
+      if (payerKey === 'NONE') localStorage.removeItem('prelude-payer');
+      else localStorage.setItem('prelude-payer', payerKey);
       const res = await fetch('/api/intake-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,7 +129,7 @@ export default function IntakePage() {
     } finally {
       setLoading(false);
     }
-  }, [name, appointmentType, ageRange, grok, deepgram]);
+  }, [name, appointmentType, ageRange, payerKey, grok, deepgram]);
 
   const finishCall = useCallback(async (transcriptText?: string) => {
     if (!session) return;
@@ -140,6 +145,7 @@ export default function IntakePage() {
           patientId: session.patientId,
           encounterId: session.encounterId,
           patientName: name,
+          payerKey: payerKey === 'NONE' ? undefined : payerKey,
         }),
       });
       const data = await res.json();
@@ -150,7 +156,7 @@ export default function IntakePage() {
       setFinishing(false);
       setStep('complete');
     }
-  }, [session, stop, name]);
+  }, [session, stop, name, payerKey]);
 
   const stepIdx = STEP_INDEX[step];
 
@@ -204,18 +210,43 @@ export default function IntakePage() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink mb-1.5">Appointment type</label>
-                      <input type="text" list="appointment-types" value={appointmentType}
-                        onChange={(e) => setAppointmentType(e.target.value)}
-                        onFocus={(e) => e.target.select()}
-                        placeholder="Sick visit, follow-up, knee pain consult…"
-                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink placeholder-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all" />
-                      <datalist id="appointment-types">
-                        <option value="Sick visit" />
-                        <option value="New patient visit" />
-                        <option value="Annual physical" />
-                        <option value="Follow-up" />
-                        <option value="Telehealth consult" />
-                      </datalist>
+                      <select value={isCustomAppointment ? OTHER_APPOINTMENT : appointmentType}
+                        onChange={(e) => {
+                          if (e.target.value === OTHER_APPOINTMENT) {
+                            setIsCustomAppointment(true);
+                            setAppointmentType('');
+                          } else {
+                            setIsCustomAppointment(false);
+                            setAppointmentType(e.target.value);
+                          }
+                        }}
+                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
+                        <option>Sick visit</option>
+                        <option>New patient visit</option>
+                        <option>Annual physical</option>
+                        <option>Follow-up</option>
+                        <option>Telehealth consult</option>
+                        <option value={OTHER_APPOINTMENT}>Other — describe it…</option>
+                      </select>
+                      {isCustomAppointment && (
+                        <input type="text" value={appointmentType} autoFocus
+                          onChange={(e) => setAppointmentType(e.target.value)}
+                          placeholder="e.g. knee pain consult, medication review…"
+                          maxLength={100}
+                          className="mt-2 w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink placeholder-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all" />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-1.5">Insurance</label>
+                      <select value={payerKey} onChange={(e) => setPayerKey(e.target.value)}
+                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
+                        <option value="UHC">UnitedHealthcare</option>
+                        <option value="CIGNA">Cigna</option>
+                        <option value="AETNA">Aetna</option>
+                        <option value="CMS">Medicare</option>
+                        <option value="NONE">Self-pay / not sure</option>
+                      </select>
+                      <p className="mt-1 text-xs text-faint">Used when you ask Prelude what your visit will cost.</p>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink mb-1.5">Age range <span className="text-faint font-normal">(optional)</span></label>
@@ -239,7 +270,7 @@ export default function IntakePage() {
                     </div>
                     <ConnectHealthRecordsButton />
                   </div>
-                  <Btn onClick={() => setStep('consent')} disabled={!name.trim()} className="w-full px-6 py-3.5">
+                  <Btn onClick={() => setStep('consent')} disabled={!name.trim() || (isCustomAppointment && !appointmentType.trim())} className="w-full px-6 py-3.5">
                     Continue →
                   </Btn>
                 </div>

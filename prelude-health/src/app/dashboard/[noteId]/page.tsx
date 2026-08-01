@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Nav } from '@/components/primitives';
 import { CommunitySuggestions } from '@/components/communities/CommunitySuggestions';
+import { PastVisits } from '@/components/visits/PastVisits';
 import { ResearchPanel } from '@/components/research/ResearchPanel';
 
 interface Note {
@@ -331,6 +332,11 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                 ? <p className="text-sm text-ink leading-relaxed">{note.chief_concern}</p>
                 : <p className="text-sm text-faint italic">{EMPTY}</p>}
             </div>
+          </SectionCard>
+
+          {/* ── Past visits ── */}
+          <SectionCard title="Past Visits">
+            <PastVisits currentNoteId={note.id} />
           </SectionCard>
 
           {/* ── Symptoms & Goals ── */}

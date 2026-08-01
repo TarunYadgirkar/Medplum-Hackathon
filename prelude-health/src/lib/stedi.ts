@@ -42,7 +42,7 @@ export async function checkEligibility(args: EligibilityArgs): Promise<CoverageS
   const baseCost = CARE_LEVEL_TO_BASE_COST[careLevel];
 
   if (!process.env.STEDI_API_KEY) {
-    return syntheticCoverage(careLevel, baseCost);
+    return syntheticCoverage(careLevel, baseCost, args.payerKey);
   }
 
   try {
@@ -71,7 +71,7 @@ export async function checkEligibility(args: EligibilityArgs): Promise<CoverageS
     return parseStediResponse(data, payer.name, careLevel, baseCost);
   } catch (err) {
     console.error('Stedi eligibility failed, using synthetic fallback:', err);
-    return syntheticCoverage(careLevel, baseCost);
+    return syntheticCoverage(careLevel, baseCost, args.payerKey);
   }
 }
 
@@ -134,22 +134,33 @@ export function parseStediResponse(
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-function syntheticCoverage(careLevel: CareLevel, baseCost: { min: number; max: number }): CoverageSummary {
+// Keyless mode still reflects the patient's chosen insurer — typical plan
+// profiles per payer so the demo shows different numbers per selection.
+const SYNTHETIC_PAYER_PROFILES: Record<string, { name: string; copayDelta: number; deductibleRemaining: number; coinsurancePct: number }> = {
+  UHC:   { name: 'UnitedHealthcare Choice Plus', copayDelta: 0,   deductibleRemaining: 750,  coinsurancePct: 20 },
+  CIGNA: { name: 'Cigna Open Access Plus',       copayDelta: 5,   deductibleRemaining: 1200, coinsurancePct: 20 },
+  AETNA: { name: 'Aetna Managed Choice',         copayDelta: -5,  deductibleRemaining: 500,  coinsurancePct: 15 },
+  CMS:   { name: 'Medicare Part B',              copayDelta: -15, deductibleRemaining: 120,  coinsurancePct: 20 },
+};
+
+function syntheticCoverage(careLevel: CareLevel, baseCost: { min: number; max: number }, payerKey?: string): CoverageSummary {
   const plan = syntheticPricing.plans[DEFAULT_PLAN_KEY];
-  const copay =
+  const profile = SYNTHETIC_PAYER_PROFILES[payerKey || 'UHC'] || SYNTHETIC_PAYER_PROFILES.UHC;
+  const baseCopay =
     careLevel === 'telehealth' ? plan.telehealthCopay :
     careLevel === 'urgent_care' ? plan.urgentCareCopay :
     careLevel === 'emergency_room' ? plan.erCopay :
     plan.pcpCopay;
+  const copay = Math.max(0, baseCopay + profile.copayDelta);
   return {
     source: 'synthetic',
-    payer: plan.name,
+    payer: profile.name,
     plan_status: 'Active Coverage',
     copay,
-    coinsurance_percent: Math.round(plan.coinsuranceAfterDeductible * 100),
-    deductible_remaining: plan.deductibleRemaining,
+    coinsurance_percent: profile.coinsurancePct,
+    deductible_remaining: profile.deductibleRemaining,
     estimated_visit_cost: baseCost,
-    spoken_summary: `Based on a typical ${plan.name} plan, expect about a $${copay} copay for a ${careLevel.replace('_', ' ')} visit (typical total cost $${baseCost.min}–$${baseCost.max}).`,
+    spoken_summary: `Based on a typical ${profile.name} plan, expect about a $${copay} copay for a ${careLevel.replace('_', ' ')} visit (typical total cost $${baseCost.min}–$${baseCost.max}).`,
   };
 }
 

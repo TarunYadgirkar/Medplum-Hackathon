@@ -30,6 +30,14 @@ const DOT = {
   labAlert: 'bg-red-500 ring-red-100',
 } as const;
 
+const LEGEND = [
+  { label: 'Visits', dotClass: DOT.encounter },
+  { label: 'Medications', dotClass: DOT.medication },
+  { label: 'Allergies', dotClass: DOT.allergy },
+  { label: 'Conditions', dotClass: DOT.condition },
+  { label: 'Labs', dotClass: DOT.labNormal },
+] as const;
+
 function labDotClass(flag: string): string {
   if (flag === 'NORMAL') return DOT.labNormal;
   if (flag === 'HIGH' || flag === 'LOW') return DOT.labAlert;
@@ -147,6 +155,14 @@ export function ChartTimeline({ record }: { record: EpicImportResult }) {
   return (
     <div className="bg-white border border-line rounded-2xl shadow-sm p-5">
       <h2 className="font-bold text-ink">Chart Timeline</h2>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        {LEGEND.map((item) => (
+          <span key={item.label} className="flex items-center gap-1.5 text-xs font-medium text-faint">
+            <span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.dotClass}`} />
+            {item.label}
+          </span>
+        ))}
+      </div>
       <div className="mt-4 flex flex-col gap-6">
         {groups.map((group) => (
           <section key={group.label} aria-label={group.label}>

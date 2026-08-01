@@ -33,6 +33,18 @@ export default function Home() {
               <p className="text-sm text-body mt-1">Review AI-drafted SOAP notes, risk flags, and the patient queue.</p>
               <p className="text-sm font-semibold text-brand mt-3 group-hover:translate-x-1 transition-transform">Open dashboard →</p>
             </Link>
+            <Link href="/medcard" className="group bg-white border border-line hover:border-brand rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
+              <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-xl mb-4">💊</div>
+              <h2 className="font-bold text-ink">My Med Card</h2>
+              <p className="text-sm text-body mt-1">Keep your medications, allergies, and conditions on file — scan a pill bottle or add them yourself.</p>
+              <p className="text-sm font-semibold text-brand mt-3 group-hover:translate-x-1 transition-transform">Open Med Card →</p>
+            </Link>
+            <Link href="/records" className="group bg-white border border-line hover:border-brand rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
+              <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-xl mb-4">📄</div>
+              <h2 className="font-bold text-ink">My health records</h2>
+              <p className="text-sm text-body mt-1">See what&apos;s on file from your check-ins and connected records.</p>
+              <p className="text-sm font-semibold text-brand mt-3 group-hover:translate-x-1 transition-transform">View records →</p>
+            </Link>
           </div>
 
           <div className="mt-12 text-xs text-faint">
@@ -46,7 +58,10 @@ export default function Home() {
           </div>
 
           <p className="mt-8 text-[11px] text-faint max-w-md mx-auto">
-            Prelude is an intake tool, not a clinician. It never diagnoses or treats. Hackathon demo — synthetic data only.
+            Prelude is an intake tool, not a clinician. It never diagnoses or treats. If this is an
+            emergency, call <span className="font-semibold text-body">911</span> — or{' '}
+            <span className="font-semibold text-body">988</span> for a mental health crisis.
+            Hackathon demo — synthetic data only.
           </p>
         </div>
       </main>

@@ -13,6 +13,18 @@ import {
 } from '@/lib/epic-import';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { ChartTimeline } from '@/components/records/ChartTimeline';
+import { RecordSummaryStrip } from '@/components/records/RecordSummaryStrip';
+
+type RecordTab = 'all' | 'timeline' | 'medications' | 'allergies' | 'labs' | 'visits';
+
+const TABS: { id: RecordTab; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'medications', label: 'Medications' },
+  { id: 'allergies', label: 'Allergies' },
+  { id: 'labs', label: 'Labs' },
+  { id: 'visits', label: 'Visits' },
+];
 
 type Snapshot = EpicImportState | null | undefined;
 
@@ -59,6 +71,7 @@ const EMERGENCY_NOTE =
 export default function RecordsPage() {
   const importState = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
+  const [activeTab, setActiveTab] = useState<RecordTab>('all');
 
   const handleLoadDemo = useCallback(() => {
     setIsLoadingDemo(true);
@@ -132,6 +145,7 @@ export default function RecordsPage() {
   }
 
   const { record, systemName, importedAt } = importState;
+  const shows = (tab: RecordTab) => activeTab === 'all' || activeTab === tab;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -155,8 +169,30 @@ export default function RecordsPage() {
           <p className="mt-0.5 text-xs text-faint">{record.patient.facility}</p>
         </header>
 
-        <ChartTimeline record={record} />
+        <RecordSummaryStrip record={record} />
 
+        <div role="tablist" aria-label="Filter records" className="flex flex-wrap justify-center gap-1.5">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-brand text-white shadow-sm'
+                  : 'border border-line bg-white text-body hover:bg-surface'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {shows('timeline') && <ChartTimeline record={record} />}
+
+        {shows('medications') && (
         <SectionCard title="Medications">
           <ul className="flex flex-col gap-4">
             {record.medications.map((med) => (
@@ -169,7 +205,9 @@ export default function RecordsPage() {
             ))}
           </ul>
         </SectionCard>
+        )}
 
+        {shows('allergies') && (
         <SectionCard title="Allergies">
           <ul className="flex flex-col gap-4">
             {record.allergies.map((allergy) => (
@@ -182,7 +220,9 @@ export default function RecordsPage() {
             ))}
           </ul>
         </SectionCard>
+        )}
 
+        {shows('labs') && (
         <SectionCard title="Lab Results">
           <ul className="flex flex-col divide-y divide-line">
             {record.labResults.map((lab) => (
@@ -203,7 +243,9 @@ export default function RecordsPage() {
             ))}
           </ul>
         </SectionCard>
+        )}
 
+        {shows('visits') && (
         <SectionCard title="Recent Encounters">
           <ul className="flex flex-col gap-4">
             {record.recentEncounters.map((enc) => (
@@ -216,6 +258,13 @@ export default function RecordsPage() {
             ))}
           </ul>
         </SectionCard>
+        )}
+
+        <div className="flex justify-center pt-4">
+          <Link href="/intake">
+            <Btn className="px-8 py-3.5 text-base">Start voice check-in</Btn>
+          </Link>
+        </div>
 
         <div className="flex justify-center py-2">
           <button

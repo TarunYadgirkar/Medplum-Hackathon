@@ -169,3 +169,26 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   timeline ramp). Verified live w/ OpenAI on Marcus's note. Also: modal double-click fix,
   free-text appointment type, demo copy cleanup. Before video: rerun cleanup-smoke.ts if
   any smoke.sh ran since last purge.
+- [12:36] [subagent/past-visits] Added src/components/visits/PastVisits.tsx + wired 'Past Visits' SectionCard into src/app/dashboard/[noteId]/page.tsx after Patient Summary. Matches prior visits via GET /api/patients (read-only): resolves patient name from the row whose note_id == current note (Note contract has no name field), then case-insensitive name match, excluding current note. Build passes.
+- [subagent/landing+medcard] Landing (src/app/page.tsx): added Med Card (/medcard) and Health
+  records (/records) cards to the existing hero grid (now 4 cards, same style); restored the
+  911/988 emergency line in the landing footer (hard rule 5 — it was missing). MedCard: new
+  src/components/medcard/ManualMedForm.tsx (name/dosage/frequency -> sanitizeField ->
+  saveMedCard merge, keyless), wired into src/app/medcard/page.tsx under an "or add manually"
+  divider; MedCard.tsx now shows a friendly empty state listing the 3 fill paths (scan /
+  manual / MyChart import) when all lists are empty. npm run build passes. Note: one build
+  attempt failed transiently on src/app/records/page.tsx (other builder mid-edit); retry green.
+
+## Records page polish (records-lane builder)
+- Added src/components/records/RecordSummaryStrip.tsx (stat strip: meds/allergies/conditions/labs/visits, ChartTimeline category colors)
+- src/app/records/page.tsx: summary strip under header, tab filter row (All/Timeline/Medications/Allergies/Labs/Visits, client state), "Start voice check-in" Btn -> /intake; all existing sections intact
+- src/components/records/ChartTimeline.tsx: legend row above timeline
+- npm run build passes; smoke.sh intentionally NOT run (dashboard camera-ready)
+- [3:0x] [full-scope] Polish sweep merged: Past Visits on note page, records tabs + summary
+  strip + timeline legend, landing links to /records + /medcard (911/988 restored on
+  landing), manual med entry on medcard. Plus: insurance picker on intake (UHC/Cigna/
+  Aetna/Medicare/self-pay) flowing through voice eligibility calls AND generate-note;
+  synthetic fallback now payer-aware (different copay/deductible per payer keyless);
+  Stedi mock payers ready for all 4 when key lands. Appointment type = select + "Other —
+  describe it" free-text (datalist UX was broken). Reddit communities: official logo,
+  "via Reddit" badge, expanded warning block (peer-not-medical-advice, privacy, 911/988).

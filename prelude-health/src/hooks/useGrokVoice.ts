@@ -74,7 +74,10 @@ export function useGrokVoice() {
         const res = await fetch('/api/eligibility', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ careLevel: args.care_level || 'primary_care' }),
+          body: JSON.stringify({
+            careLevel: args.care_level || 'primary_care',
+            payerKey: localStorage.getItem('prelude-payer') || undefined,
+          }),
         });
         const data: CoverageSummary = await res.json();
         setCoverage(data);
