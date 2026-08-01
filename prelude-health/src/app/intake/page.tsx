@@ -89,7 +89,7 @@ function VoiceStage({ state }: { state: string }) {
       ) : (
         // Live mic drives the orb: it moves with the caller's voice (and picks
         // up the agent's speech from the speakers). Sim fallback if mic denied.
-        <VoiceOrb mode="mic" size={165} intensity={state === 'connecting' ? 0.5 : 1} className="scale-90 sm:scale-100" />
+        <VoiceOrb mode="mic" size={165} intensity={state === 'connecting' ? 0.5 : 1} reactivity={state === 'connecting' ? 1 : 2.6} className="scale-90 sm:scale-100" />
       )}
 
       <span className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 text-[9.5px] font-bold uppercase tracking-[.2em] text-bright/80">

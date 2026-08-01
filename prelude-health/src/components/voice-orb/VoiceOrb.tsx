@@ -21,20 +21,35 @@ interface VoiceOrbProps {
   idle?: boolean;
   /** When true, the orb speeds up its animation while the cursor hovers it */
   hoverInteractive?: boolean;
+  /**
+   * Siri-style speech expansion, mic mode only. 1 = the design doc's subtle
+   * response; >1 leaves the quiet/noise-floor state untouched but expands
+   * everything above speaking level hard (bigger scale swings, faster attack,
+   * more ripples). Call screens want ~2.5.
+   */
+  reactivity?: number;
   className?: string;
 }
 
 interface Ripple { born: number; amp: number }
 
-export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle = false, hoverInteractive = false, className = '' }: VoiceOrbProps) {
+/* 0 below lo, 1 above hi, smooth in between — the expander's knee */
+const smoothstep = (lo: number, hi: number, x: number) => {
+  const u = Math.min(1, Math.max(0, (x - lo) / (hi - lo)));
+  return u * u * (3 - 2 * u);
+};
+
+export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle = false, hoverInteractive = false, reactivity = 1, className = '' }: VoiceOrbProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const modeRef = useRef(mode);
   const idleRef = useRef(idle);
   const intensityRef = useRef(intensity);
+  const reactivityRef = useRef(reactivity);
   const hoverRef = useRef(false);
   modeRef.current = mode;
   idleRef.current = idle;
   intensityRef.current = intensity;
+  reactivityRef.current = reactivity;
 
   useEffect(() => {
     const root = rootRef.current;
@@ -131,11 +146,20 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
       const speedMul = hoverRef.current ? 1.7 : 1;
       t += speedMul / 60;
       const gain = (intensityRef.current ?? 1) * (idleRef.current ? 0.3 : 1) * (hoverRef.current ? 1.15 : 1);
-      const live = micOn && !idleRef.current ? micLevel() : null;
+      let live = micOn && !idleRef.current ? micLevel() : null;
+      const R = reactivityRef.current ?? 1;
+      // Siri-style expander: quiet/noise floor passes through untouched; any
+      // real speech gets pushed hard toward full-scale. Knee at ~0.1–0.3 RMS.
+      if (live != null && R > 1) {
+        live = Math.min(1, live * (1 + (R - 1) * smoothstep(0.09, 0.3, live)));
+      }
       const raw = Math.min(1, (live == null ? env(t) : live) * gain);
       histAt = (histAt + 1) % hist.length;
       hist[histAt] = raw;
-      v = smooth(v, raw, live == null ? 0.24 : 0.42, live == null ? 0.085 : 0.13);
+      // Boosted mode also attacks faster so syllables read as distinct pulses.
+      const atk = live == null ? 0.24 : R > 1 ? 0.6 : 0.42;
+      const rel = live == null ? 0.085 : R > 1 ? 0.16 : 0.13;
+      v = smooth(v, raw, atk, rel);
       vSlow = smooth(vSlow, raw, 0.075, 0.04);
 
       nodes.forEach((el) => {
@@ -143,7 +167,10 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
         const slow = el.hasAttribute('data-vz-slow');
         const target = Math.min(1, (live == null ? env(t + o) : delayed(o)) * gain);
         const prev = smoothed.get(el) ?? target;
-        const next = slow ? smooth(prev, target, 0.055, 0.03) : smooth(prev, target, 0.22, 0.08);
+        const boosted = live != null && R > 1;
+        const next = slow
+          ? smooth(prev, target, boosted ? 0.1 : 0.055, boosted ? 0.05 : 0.03)
+          : smooth(prev, target, boosted ? 0.48 : 0.22, boosted ? 0.11 : 0.08);
         smoothed.set(el, next);
         el.style.setProperty('--v', next.toFixed(4));
       });
@@ -170,7 +197,9 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
         el.style.setProperty('--my', y.toFixed(1) + 'px');
       });
 
-      if (v > 0.58 && (!lastRipple || t - lastRipple > 0.6)) {
+      const rippleThresh = R > 1 ? 0.4 : 0.58;
+      const rippleGap = R > 1 ? 0.32 : 0.6;
+      if (v > rippleThresh && (!lastRipple || t - lastRipple > rippleGap)) {
         lastRipple = t;
         ripples.push({ born: t, amp: v });
       }
@@ -206,6 +235,11 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
 
   const k = size / 220; // design ratios are set at the 220px landing orb
   const px = (n: number) => `${Math.round(n * k)}px`;
+  // Visual swing scales with reactivity: main orb breathes ~7% at rest spec,
+  // ~16% on a reactive call screen; glow wash grows proportionally.
+  const ampMul = 1 + (reactivity - 1) * 0.75;
+  const orbAmp = (0.07 * ampMul).toFixed(3);
+  const glowAmp = Math.min(0.7, 0.3 * ampMul).toFixed(2);
 
   return (
     <div ref={rootRef} className={`relative flex items-center justify-center ${className}`} style={{ width: px(340), height: px(340) }}>
@@ -217,7 +251,7 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
           width: px(300), height: px(300),
           background: 'radial-gradient(circle,rgba(232,178,84,.4),rgba(168,52,43,.2) 52%,transparent 70%)',
           filter: 'blur(40px)',
-          transform: 'scale(calc(.94 + var(--v,.2) * .3))',
+          transform: `scale(calc(.94 + var(--v,.2) * ${glowAmp}))`,
         }}
       />
       {/* main orb */}
@@ -228,7 +262,7 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
           width: px(220), height: px(220),
           background: '#fcfbf7',
           boxShadow: '0 0 0 1px rgba(252,251,247,.25),0 24px 60px rgba(0,0,0,.4)',
-          transform: 'scale(calc(1 + var(--v,.2) * .07))',
+          transform: `scale(calc(1 + var(--v,.2) * ${orbAmp}))`,
         }}
       >
         <div className="absolute" style={{ inset: '-30%', filter: 'saturate(1.2)' }}>
