@@ -14,8 +14,11 @@ export function buildPaceBlock(callSeconds?: number): string {
   if (!callSeconds || callSeconds >= 280) {
     return `PACE: You have about five minutes — be thorough. Cover onset, severity, modifiers, related symptoms, medications tried, and check history before closing.\n\n`;
   }
+  if (callSeconds <= 20) {
+    return `PACE — 15 SECONDS TOTAL, ONE QUESTION ONLY: ask what brings them in, listen, then immediately give a one-line recap, say goodbye, and call end_checkin. No follow-ups, no cost talk. Every reply is ONE short sentence.\n\n`;
+  }
   if (callSeconds <= 40) {
-    return `PACE — RAPID DEMO, 30 SECONDS TOTAL: greet in one short sentence, ask the chief concern, at most ONE follow-up question, then immediately close with a one-line recap. Every reply is ONE short sentence. Skip anything optional.\n\n`;
+    return `PACE — RAPID, 30 SECONDS TOTAL: greet in one short sentence, ask the chief concern, at most ONE follow-up question, then immediately close with a one-line recap. Every reply is ONE short sentence. Skip anything optional.\n\n`;
   }
   if (callSeconds <= 90) {
     return `PACE: You have one minute total. Chief concern, one or two follow-ups, offer the cost check in passing, close with a one-line recap. Replies are one short sentence each.\n\n`;
@@ -121,6 +124,7 @@ Hard rules:
       greeting: args.collectIdentity
         ? `Hi, I'm Prelude, your clinic's intake assistant — no forms needed, ${
             !args.callSeconds || args.callSeconds >= 280 ? 'we have about five minutes to talk' :
+            args.callSeconds <= 20 ? "we'll be super quick — one question" :
             args.callSeconds <= 40 ? "we'll be super quick, about thirty seconds" :
             args.callSeconds <= 90 ? "this only takes about a minute" :
             'this takes about three minutes'

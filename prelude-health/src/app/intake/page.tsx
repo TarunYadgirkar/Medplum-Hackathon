@@ -22,7 +22,7 @@ type Step = 'form' | 'consent' | 'calling' | 'complete';
 const OTHER_APPOINTMENT = '__other__';
 
 const CALL_LENGTHS = [
-  { seconds: 30, label: '30 sec (demo)' },
+  { seconds: 15, label: '15 sec' },
   { seconds: 60, label: '1 min' },
   { seconds: 180, label: '3 min' },
   { seconds: 300, label: '5 min' },
