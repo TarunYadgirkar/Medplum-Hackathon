@@ -12,6 +12,7 @@ import {
   type EpicImportState,
 } from '@/lib/epic-import';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
+import { ChartTimeline } from '@/components/records/ChartTimeline';
 
 type Snapshot = EpicImportState | null | undefined;
 
@@ -153,6 +154,8 @@ export default function RecordsPage() {
           </p>
           <p className="mt-0.5 text-xs text-faint">{record.patient.facility}</p>
         </header>
+
+        <ChartTimeline record={record} />
 
         <SectionCard title="Medications">
           <ul className="flex flex-col gap-4">
