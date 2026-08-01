@@ -109,3 +109,10 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   reintroduce the leaked history. lane-2's and lane-4's work is all on main; nothing lost.
   OPENAI_API_KEY was auto-revoked while exposed (401) — note generation falls back to demo
   note until Tarun supplies a fresh key. Deepgram/Medplum/Moss keys still work.
+
+- [11:5x] [lane-3] MOSS LIVE: /api/history returns source:moss with ranked results (verified
+  against real keys). Fixed SDK query shape (SearchResult.docs, not bare array), made index
+  build non-blocking at intake-session start (job tracked; queries wait ≤2.5s then keyword-
+  fallback; failed builds lazily re-kick). loadIndex for in-memory speed. Keyless fallback
+  intact. NEXT: Stedi — BLOCKER: no STEDI_API_KEY in .env (get a test key from stedi.com);
+  meanwhile fixing MOCK_PAYERS + 271 parsing from docs so it's live the second the key lands.
