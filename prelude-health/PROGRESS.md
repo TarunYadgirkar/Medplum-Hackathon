@@ -52,3 +52,10 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   KeepAlive, barge-in path untouched, FunctionCallRequest round trip (both functions),
   client_side guard added. Grok backup engine intentionally NOT live-tested (Deepgram is
   the demo engine per SETUP_KEYS; interfaces unchanged so swap still works if needed).
+- [11:0x] [lane-4] Branch lane-4 created. Baseline `npm run build` green after pull.
+- [11:0x] [lane-4] Wrote docs/UI_SPEC.md — full page/component/state inventory for the
+  Claude Design handoff. Design language will land as new UI later; for now lane-4 does
+  structure-only refactors (design tokens + shared components), no visual changes.
+- [11:0x] [lane-4 → lane-2 ASK] Dashboard delete button calls `DELETE /api/patients/[id]`
+  but that route doesn't exist — silently no-ops. Please add the route (store + Medplum
+  delete) or tell lane-4 to hide the button.
