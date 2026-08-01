@@ -119,7 +119,12 @@ Hard rules:
         provider: { type: 'deepgram', model: 'aura-2-thalia-en' },
       },
       greeting: args.collectIdentity
-        ? `Hi, I'm Prelude, your clinic's intake assistant — no forms needed, we'll just talk. First, what's your full name?`
+        ? `Hi, I'm Prelude, your clinic's intake assistant — no forms needed, ${
+            !args.callSeconds || args.callSeconds >= 280 ? 'we have about five minutes to talk' :
+            args.callSeconds <= 40 ? "we'll be super quick, about thirty seconds" :
+            args.callSeconds <= 90 ? "this only takes about a minute" :
+            'this takes about three minutes'
+          }. First, what's your full name?`
         : (args.callSeconds && args.callSeconds <= 40)
         ? `Hi ${patientName.split(' ')[0]}, I'm Prelude — quick check-in for your doctor. What brings you in?`
         : args.chartSystemName
