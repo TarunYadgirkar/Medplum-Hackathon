@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Icon } from '@/components/primitives';
+import CoverageBot from '@/components/coverage-bot/CoverageBot';
 
 const PIPELINE = [
   { icon: 'mic', label: 'Talk', vendor: 'Deepgram' },
@@ -129,6 +130,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <CoverageBot />
     </div>
   );
 }

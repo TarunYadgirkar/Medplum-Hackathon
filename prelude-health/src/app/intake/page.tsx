@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useGrokVoice } from '@/hooks/useGrokVoice';
 import { Nav, Btn, Icon } from '@/components/primitives';
+import CoverageBot from '@/components/coverage-bot/CoverageBot';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { getImportedHistoryDocs, getEpicImport, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
 
@@ -592,6 +593,7 @@ export default function IntakePage() {
                 </div>
               )}
 
+              {step === 'complete' && <CoverageBot />}
               {step === 'complete' && (
                 <div className="border border-line bg-panel p-6 sm:p-8">
                   <div className="flex items-center gap-2.5">

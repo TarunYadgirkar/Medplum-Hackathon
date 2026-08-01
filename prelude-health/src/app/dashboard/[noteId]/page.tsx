@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Icon, Nav, StatusChip, BulletList, MicroLabel } from '@/components/primitives';
+import CoverageBot from '@/components/coverage-bot/CoverageBot';
 import { CommunitySuggestions } from '@/components/communities/CommunitySuggestions';
 import { PastVisits } from '@/components/visits/PastVisits';
 import { ResearchPanel } from '@/components/research/ResearchPanel';
@@ -562,6 +563,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
           </div>
         </motion.div>
       </main>
+      <CoverageBot />
     </div>
   );
 }
