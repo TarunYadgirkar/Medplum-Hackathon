@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Nav } from '@/components/primitives';
 import { CommunitySuggestions } from '@/components/communities/CommunitySuggestions';
+import { ResearchPanel } from '@/components/research/ResearchPanel';
 
 interface Note {
   id: string;
@@ -392,6 +393,21 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                 </SectionCard>
               )}
             </div>
+          )}
+
+          {/* ── Deep research + care-option visualization ── */}
+          {(note.chief_concern || note.symptoms_reported?.length) && (
+            <ResearchPanel
+              summary={[note.chief_concern, ...(note.symptoms_reported || [])].filter(Boolean).join('. ')}
+              symptoms={note.symptoms_reported || []}
+              riskFlags={note.risk_flags || []}
+              careLevel={note.care_recommendation?.care_level}
+              coverage={note.coverage ? {
+                copay: note.coverage.copay ?? null,
+                deductible_remaining: note.coverage.deductible_remaining ?? null,
+                payer: note.coverage.payer,
+              } : undefined}
+            />
           )}
 
           {/* ── Peer communities (carepath layer: Reddit via Arctic Shift) ── */}

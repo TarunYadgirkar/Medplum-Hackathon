@@ -162,3 +162,10 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   (test patient created + deleted). All 5 prod pages 200. STILL MISSING: STEDI_API_KEY (not in
   .env or .env.local) — eligibility stays on synthetic fallback until it lands; then run
   `npx tsx scripts/verify-stedi.ts`.
+- [2:0x] [full-scope] Brief-alignment: NEW /api/research + ResearchPanel on the note page —
+  deep research (patient explainer + provider considerations + red flags), care-level
+  spectrum viz, color risk pills, care-options table w/ medical-fit badges + coverage-aware
+  costs (ported/adapted from carepath classify + CareOptionsTable + RiskSignalTags +
+  timeline ramp). Verified live w/ OpenAI on Marcus's note. Also: modal double-click fix,
+  free-text appointment type, demo copy cleanup. Before video: rerun cleanup-smoke.ts if
+  any smoke.sh ran since last purge.
