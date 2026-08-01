@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { Nav, SectionCard, MicroLabel, Btn } from '@/components/primitives';
 import { LAB_FLAG_STYLES } from '@/data/epic-mock';
@@ -72,6 +72,24 @@ export default function RecordsPage() {
   const importState = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [activeTab, setActiveTab] = useState<RecordTab>('all');
+
+  // Tab lives in the URL so back/forward/refresh/share behave like a real site.
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('tab') as RecordTab | null;
+    if (fromUrl && TABS.some((t) => t.id === fromUrl)) setActiveTab(fromUrl);
+    const onPop = () => {
+      const tab = new URLSearchParams(window.location.search).get('tab') as RecordTab | null;
+      setActiveTab(tab && TABS.some((t) => t.id === tab) ? tab : 'all');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  const selectTab = useCallback((tab: RecordTab) => {
+    const url = tab === 'all' ? window.location.pathname : `${window.location.pathname}?tab=${tab}`;
+    window.history.pushState(null, '', url);
+    setActiveTab(tab);
+  }, []);
 
   const handleLoadDemo = useCallback(() => {
     setIsLoadingDemo(true);
@@ -178,7 +196,7 @@ export default function RecordsPage() {
               type="button"
               role="tab"
               aria-selected={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => selectTab(tab.id)}
               className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
                 activeTab === tab.id
                   ? 'bg-brand text-white shadow-sm'

@@ -2,7 +2,7 @@
 // Patient voice check-in — UI structure carried over from klarity-voicenote's
 // intake flow, voice engine swapped from Retell to the Deepgram Voice Agent.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
@@ -95,12 +95,36 @@ export default function IntakePage() {
     return () => window.removeEventListener(RECORDS_CHANGED_EVENT, sync);
   }, []);
 
+  // Browser back/forward moves between steps instead of leaving the flow.
+  const stepRef = useRef<Step>('form');
+  stepRef.current = step;
+  const stopRef = useRef<(() => unknown) | null>(null);
+
+  const goToStep = useCallback((next: Step) => {
+    window.history.pushState({ intakeStep: next }, '');
+    setStep(next);
+  }, []);
+
+  useEffect(() => {
+    window.history.replaceState({ intakeStep: 'form' }, '');
+    const onPop = (e: PopStateEvent) => {
+      const target: Step = e.state?.intakeStep ?? 'form';
+      // Leaving a live call via back: end it cleanly first.
+      if (stepRef.current === 'calling' && target !== 'calling') stopRef.current?.();
+      // Back from the done screen restarts the flow rather than replaying a call.
+      setStep(target === 'calling' || target === 'complete' ? 'form' : target);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   // Two interchangeable voice engines: Deepgram Voice Agent (sponsor, primary)
   // and Grok Voice (carried over from carepath as a battle-tested backup).
   const deepgram = useVoiceAgent();
   const grok = useGrokVoice();
   const voice = provider === 'grok' ? grok : deepgram;
   const { state: voiceState, transcript, coverage, error, stop } = voice;
+  stopRef.current = stop;
 
   const beginCheckIn = useCallback(async () => {
     setLoading(true);
@@ -114,7 +138,7 @@ export default function IntakePage() {
       });
       const data = await res.json();
       setSession(data);
-      setStep('calling');
+      goToStep('calling');
 
       const cfg = await fetch('/api/voice-config').then((r) => r.json()).catch(() => ({ provider: 'demo' }));
       setProvider(cfg.provider);
@@ -154,7 +178,7 @@ export default function IntakePage() {
       console.error('generate-note failed', err);
     } finally {
       setFinishing(false);
-      setStep('complete');
+      goToStep('complete');
     }
   }, [session, stop, name, payerKey]);
 
@@ -270,7 +294,7 @@ export default function IntakePage() {
                     </div>
                     <ConnectHealthRecordsButton />
                   </div>
-                  <Btn onClick={() => setStep('consent')} disabled={!name.trim() || (isCustomAppointment && !appointmentType.trim())} className="w-full px-6 py-3.5">
+                  <Btn onClick={() => goToStep('consent')} disabled={!name.trim() || (isCustomAppointment && !appointmentType.trim())} className="w-full px-6 py-3.5">
                     Continue →
                   </Btn>
                 </div>
@@ -304,7 +328,7 @@ export default function IntakePage() {
                     </span>
                   </label>
                   <div className="flex gap-3 pt-1">
-                    <Btn variant="secondary" onClick={() => setStep('form')} className="flex-1 px-6 py-3.5">Back</Btn>
+                    <Btn variant="secondary" onClick={() => window.history.back()} className="flex-1 px-6 py-3.5">Back</Btn>
                     <button onClick={beginCheckIn} disabled={!consented || loading}
                       className="flex-1 bg-brand hover:bg-brand-dark disabled:bg-line disabled:text-faint text-white font-semibold rounded-xl px-6 py-3.5 transition-all duration-200 shadow-sm disabled:shadow-none">
                       {loading ? 'Starting…' : 'Start Voice Check-in'}
