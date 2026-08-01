@@ -129,6 +129,10 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   click. ⚠ OPENAI_API_KEY is INVALIDATED (leaked-key auto-revoke; generate-note silently
   demo-fallbacks) — need fresh key, local .env only. ⚠ rebases onto rewritten main DELETE
   .env from worktrees — re-copy it after rebasing.
+- [12:25] [lane-2] Dashboard purged to camera-ready state: ONLY the 3 seeded demo patients
+  remain (Marcus urgent_review/high, Priya ai_draft/low, Robert reviewed/medium). All test
+  junk deleted from Medplum. If any lane runs smoke.sh again, rerun cleanup-smoke.ts after.
+  Lane 2 session ended.
 
 - [1:0x] [full-scope] Carepath features ported: (1) Epic MyChart import — 24-system modal,
   simulated SMART on FHIR, /records page; imported chart feeds the voice prompt (fenced as
