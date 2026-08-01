@@ -12,9 +12,11 @@ import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useGrokVoice } from '@/hooks/useGrokVoice';
 import { Nav, Btn, Icon } from '@/components/primitives';
 import CoverageBot from '@/components/coverage-bot/CoverageBot';
+import VoiceOrb from '@/components/voice-orb/VoiceOrb';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { getImportedHistoryDocs, getEpicImport, importMatchesPatient, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
 import { CARRIERS } from '@/data/insurance-plans';
+import { ensureMic, micActive, readLevel } from '@/lib/mic-level';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const OTHER_APPOINTMENT = '__other__';
@@ -85,20 +87,107 @@ function VoiceStage({ state }: { state: string }) {
           <Icon name="check" className="text-[34px] text-bright" />
         </div>
       ) : (
-        <div className="relative w-40 h-40">
-          <div className="absolute -inset-8 rounded-full bg-brand-accent/25 blur-2xl animate-breathe" aria-hidden />
-          <div className={`relative w-40 h-40 rounded-full bg-bright overflow-hidden shadow-[0_0_0_1px_var(--color-line),0_24px_60px_rgba(0,0,0,.4)] ${state === 'connecting' ? 'animate-breathe' : ''}`}>
-            <div className="absolute w-28 h-28 -left-4 -top-2 rounded-full bg-brand/80 blur-xl" aria-hidden />
-            <div className="absolute w-24 h-24 right-0 top-9 rounded-full bg-danger/70 blur-xl" aria-hidden />
-            <div className="absolute w-24 h-24 left-4 -bottom-2 rounded-full bg-caution/80 blur-xl" aria-hidden />
-          </div>
-        </div>
+        // Live mic drives the orb: it moves with the caller's voice (and picks
+        // up the agent's speech from the speakers). Sim fallback if mic denied.
+        <VoiceOrb mode="mic" size={165} intensity={state === 'connecting' ? 0.5 : 1} reactivity={state === 'connecting' ? 1 : 2.6} className="scale-90 sm:scale-100" />
       )}
 
       <span className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 text-[9.5px] font-bold uppercase tracking-[.2em] text-bright/80">
         <Icon name={status.icon} className="text-[16px]" />
         {status.text}
       </span>
+    </div>
+  );
+}
+
+const BAR_COLORS = ['bg-ink', 'bg-ink', 'bg-caution', 'bg-danger', 'bg-caution', 'bg-ink', 'bg-ink'];
+const BAR_COUNT = BAR_COLORS.length;
+const RING_SIZE = 60;
+
+/* Mic-reactive visualizer bars — falls back to the CSS keyframe animation
+   (voice-bar / voice-bar-active) when the mic is unavailable. */
+function ReactiveBars({ active }: { active: boolean }) {
+  const barRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const smoothedRef = useRef<number[]>(new Array(BAR_COUNT).fill(0));
+  const ringRef = useRef<number[]>(new Array(RING_SIZE).fill(0));
+  const writeIdxRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const [micUnavailable, setMicUnavailable] = useState(false);
+  const micUnavailableRef = useRef(false);
+
+  useEffect(() => {
+    void ensureMic();
+    const onPointerDown = () => {
+      if (!micActive()) void ensureMic();
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+
+    const tick = () => {
+      const level = readLevel();
+      if (level == null) {
+        if (!micUnavailableRef.current) {
+          micUnavailableRef.current = true;
+          setMicUnavailable(true);
+        }
+      } else {
+        if (micUnavailableRef.current) {
+          micUnavailableRef.current = false;
+          setMicUnavailable(false);
+        }
+        const ring = ringRef.current;
+        const w = writeIdxRef.current;
+        ring[w % RING_SIZE] = level;
+        writeIdxRef.current = w + 1;
+
+        for (let i = 0; i < BAR_COUNT; i++) {
+          const delay = i * 3;
+          const idx = (writeIdxRef.current - 1 - delay + delay * RING_SIZE) % RING_SIZE;
+          const sample = ring[idx];
+          const prev = smoothedRef.current[i];
+          const rate = sample > prev ? 0.4 : 0.12;
+          const next = prev + (sample - prev) * rate;
+          smoothedRef.current[i] = next;
+          const el = barRefs.current[i];
+          if (el) el.style.height = `${12 + next * 88}%`;
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [active]);
+
+  const useCss = !active || micUnavailable;
+
+  // Clear any rAF-driven inline height so the CSS keyframe animation isn't
+  // fighting a stale inline style once we fall back to it.
+  useEffect(() => {
+    if (useCss) {
+      for (const el of barRefs.current) {
+        if (el) el.style.height = '';
+      }
+    }
+  }, [useCss]);
+
+  return (
+    <div className="flex items-end justify-center gap-1.5 h-7" aria-hidden>
+      {BAR_COLORS.map((c, i) => (
+        <span
+          key={i}
+          ref={(el) => {
+            barRefs.current[i] = el;
+          }}
+          className={`w-[7px] h-full ${c} ${useCss ? (active ? 'voice-bar-active' : 'voice-bar') : ''}`}
+        />
+      ))}
     </div>
   );
 }
@@ -545,11 +634,7 @@ export default function IntakePage() {
                         <VoiceStage state={voiceState} />
 
                         {(voiceState === 'active' || voiceState === 'agent_speaking') && (
-                          <div className="flex items-end justify-center gap-1.5 h-7" aria-hidden>
-                            {['bg-ink', 'bg-ink', 'bg-caution', 'bg-danger', 'bg-caution', 'bg-ink', 'bg-ink'].map((c, i) => (
-                              <span key={i} className={`w-[7px] h-full ${c} ${voiceState === 'agent_speaking' ? 'voice-bar-active' : 'voice-bar'}`} />
-                            ))}
-                          </div>
+                          <ReactiveBars active={voiceState === 'active' || voiceState === 'agent_speaking'} />
                         )}
 
                         {coverage && (

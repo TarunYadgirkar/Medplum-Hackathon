@@ -221,3 +221,15 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   screen (talk over it freely). "Skip the form — just talk to Prelude" path: agent
   collects name + visit type in conversation (collectIdentity), form still works as
   before. Both engines kept interface parity.
+- [14:0x] [lane-4] VoiceOrb rebuilt as a faithful port of the design-doc orb motion system
+  (morphing silhouette, aurora blobs, ripple rings, speech-envelope sim + live-mic drive).
+  Landing = sim mode (no bars, per design), intake call stage = mic-driven. FULL APP
+  RETEST in browser: landing/orb, coverage bot full chip flow (synthetic result — no
+  STEDI_API_KEY in local .env), intake form→consent→call→note, note review + Approve
+  PATCH, patient chart timeline + calendar, /records /medcard 200, smoke.sh ALL GREEN.
+  ⚠ FINDING for lane-1: /api/voice-token fails locally — "Could not get a Deepgram
+  token" with the current shared key. If the key was rotated after the leak, update
+  local .envs + Vercel; error fallback path works (demo transcript still charts).
+- [voice-ux] Re: lane-4's voice-token finding — Deepgram key WAS rotated; new key verified
+  working in this session's local .env + Vercel. If your worktree's .env is stale, recopy
+  from Medplum-Hackathon/prelude-health/.env.
