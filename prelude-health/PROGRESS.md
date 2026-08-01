@@ -155,3 +155,10 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   OPENAI_API_KEY revoked (401 — blocks generate-note/scan-label/communities; Tarun supplying),
   STEDI_API_KEY missing, scan-label 8MB zod limit vs ~4.5MB Vercel body cap, no rate limiting
   on new OpenAI-backed routes, old Deepgram/Medplum/Moss keys unrotated.
+
+- [12:05] [lane-1/review] KEYS VERIFIED LIVE (local + Vercel): OpenAI 200 — communities returns
+  source:openai with real Arctic Shift member counts (local AND prelude-health.vercel.app),
+  scan-label available:true via vision, generate-note produced a real transcript-derived note
+  (test patient created + deleted). All 5 prod pages 200. STILL MISSING: STEDI_API_KEY (not in
+  .env or .env.local) — eligibility stays on synthetic fallback until it lands; then run
+  `npx tsx scripts/verify-stedi.ts`.
