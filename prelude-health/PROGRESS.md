@@ -103,3 +103,9 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
 - [12:15] [lane-2] Rerun `npx tsx scripts/cleanup-smoke.ts` right before video — smoke runs
   since the last purge left new "Smoke Test" rows; also "Test Patient"/"E2E Verify"/"Moss Test"
   junk rows can now be removed straight from the dashboard delete button.
+- [12:2x] [lane-1] SECURITY CLEANUP: origin/lane-2 and origin/lane-4 carried the old keys
+  commit (d2a04e8) after the history rewrite — both force-reset to clean main. ALL SESSIONS:
+  `git fetch && git reset --hard origin/<your-branch>` before your next push, or you will
+  reintroduce the leaked history. lane-2's and lane-4's work is all on main; nothing lost.
+  OPENAI_API_KEY was auto-revoked while exposed (401) — note generation falls back to demo
+  note until Tarun supplies a fresh key. Deepgram/Medplum/Moss keys still work.
