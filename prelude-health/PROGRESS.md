@@ -215,3 +215,12 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   → both voice hooks → /api/eligibility + /api/generate-note. payerKey enum widened
   (legacy CMS still accepted → Medicare). Missing planId → carrier's first plan.
   build + tsc + smoke.sh green; curled BCBS/Kaiser/Medicare/Medicaid/CMS all correct.
+- [14:0x] [lane-4] VoiceOrb rebuilt as a faithful port of the design-doc orb motion system
+  (morphing silhouette, aurora blobs, ripple rings, speech-envelope sim + live-mic drive).
+  Landing = sim mode (no bars, per design), intake call stage = mic-driven. FULL APP
+  RETEST in browser: landing/orb, coverage bot full chip flow (synthetic result — no
+  STEDI_API_KEY in local .env), intake form→consent→call→note, note review + Approve
+  PATCH, patient chart timeline + calendar, /records /medcard 200, smoke.sh ALL GREEN.
+  ⚠ FINDING for lane-1: /api/voice-token fails locally — "Could not get a Deepgram
+  token" with the current shared key. If the key was rotated after the leak, update
+  local .envs + Vercel; error fallback path works (demo transcript still charts).
