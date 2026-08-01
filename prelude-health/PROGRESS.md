@@ -59,3 +59,8 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
 - [11:0x] [lane-4 → lane-2 ASK] Dashboard delete button calls `DELETE /api/patients/[id]`
   but that route doesn't exist — silently no-ops. Please add the route (store + Medplum
   delete) or tell lane-4 to hide the button.
+- [11:2x] [lane-4] Structure sprint done: `@theme` design tokens in globals.css +
+  `src/components/primitives.tsx` shared primitives (Nav/Btn/SectionCard/
+  StatusChip/RiskBadge/BulletList), and all 4 pages routed through tokens/primitives
+  with ZERO visual change (verified: build green + smoke.sh all pass). The Claude
+  Design language will land as a token+primitive swap. Waiting on design mockups.

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useGrokVoice } from '@/hooks/useGrokVoice';
+import { Nav, Btn } from '@/components/primitives';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const STEPS = ['Form', 'Consent', 'Check-in', 'Done'];
@@ -36,22 +37,22 @@ function Visualizer({ state }: { state: string }) {
   if (state === 'ended') {
     return (
       <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 bg-[#00B894]/10 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-[#00B894]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center">
+          <svg className="w-8 h-8 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <p className="text-[#64748B] text-sm">Charting your visit…</p>
+        <p className="text-body text-sm">Charting your visit…</p>
       </div>
     );
   }
   if (state === 'connecting') {
     return (
       <div className="flex flex-col items-center gap-4">
-        <div className="animate-pulse w-16 h-16 bg-[#00B894]/15 rounded-full flex items-center justify-center">
-          <div className="w-8 h-8 bg-[#00B894]/30 rounded-full" />
+        <div className="animate-pulse w-16 h-16 bg-brand/15 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-brand/30 rounded-full" />
         </div>
-        <p className="text-[#64748B] text-sm">Connecting — allow microphone access…</p>
+        <p className="text-body text-sm">Connecting — allow microphone access…</p>
       </div>
     );
   }
@@ -60,10 +61,10 @@ function Visualizer({ state }: { state: string }) {
     <div className="flex flex-col items-center gap-4">
       <div className="flex items-end gap-[6px] h-20 px-2">
         {barHeights.map((h, i) => (
-          <div key={i} className={`w-[6px] rounded-full ${isAgent ? 'bg-[#00CEB8] animate-pulse' : 'bg-[#00B894]'} ${h} transition-colors duration-500`} />
+          <div key={i} className={`w-[6px] rounded-full ${isAgent ? 'bg-brand-accent animate-pulse' : 'bg-brand'} ${h} transition-colors duration-500`} />
         ))}
       </div>
-      <p className="text-[#64748B] text-sm">{isAgent ? 'Prelude is speaking…' : 'Listening — speak when ready'}</p>
+      <p className="text-body text-sm">{isAgent ? 'Prelude is speaking…' : 'Listening — speak when ready'}</p>
     </div>
   );
 }
@@ -144,27 +145,24 @@ export default function IntakePage() {
   const stepIdx = STEP_INDEX[step];
 
   return (
-    <div className="min-h-dvh bg-[#F8FAFC] flex flex-col">
-      <nav className="bg-white border-b border-[#E2E8F0] px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="font-bold text-xl text-[#00B894] tracking-tight">Prelude</Link>
-        <span className="text-sm text-[#64748B] font-medium">Voice Check-in</span>
-      </nav>
+    <div className="min-h-dvh bg-surface flex flex-col">
+      <Nav right={<span className="text-sm text-body font-medium">Voice Check-in</span>} />
 
       {/* Progress */}
-      <div className="bg-white border-b border-[#E2E8F0] px-6 py-4">
+      <div className="bg-white border-b border-line px-6 py-4">
         <div className="max-w-lg mx-auto flex items-center">
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center flex-1 last:flex-none">
               <div className="flex flex-col items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                  i < stepIdx ? 'bg-[#00B894] text-white' : i === stepIdx ? 'bg-[#00B894] text-white ring-4 ring-[#00B894]/20' : 'bg-[#E2E8F0] text-[#94A3B8]'
+                  i < stepIdx ? 'bg-brand text-white' : i === stepIdx ? 'bg-brand text-white ring-4 ring-brand/20' : 'bg-line text-faint'
                 }`}>
                   {i < stepIdx ? '✓' : i + 1}
                 </div>
-                <span className={`text-[11px] font-medium mt-1 ${i === stepIdx ? 'text-[#00B894]' : 'text-[#94A3B8]'}`}>{s}</span>
+                <span className={`text-[11px] font-medium mt-1 ${i === stepIdx ? 'text-brand' : 'text-faint'}`}>{s}</span>
               </div>
               {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-[2px] mx-2 mb-4 rounded transition-colors duration-500 ${i < stepIdx ? 'bg-[#00B894]' : 'bg-[#E2E8F0]'}`} />
+                <div className={`flex-1 h-[2px] mx-2 mb-4 rounded transition-colors duration-500 ${i < stepIdx ? 'bg-brand' : 'bg-line'}`} />
               )}
             </div>
           ))}
@@ -176,10 +174,10 @@ export default function IntakePage() {
           <motion.div key={step} {...fadeUp} className="w-full max-w-lg">
 
             {step === 'form' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8F0] overflow-hidden">
-                <div className="bg-gradient-to-br from-[#00B894]/5 to-[#00CEB8]/5 px-8 pt-8 pb-6 border-b border-[#E2E8F0]">
-                  <h1 className="text-2xl font-bold text-[#0F172A]">Check in before your visit</h1>
-                  <p className="mt-1.5 text-[#64748B] text-sm leading-relaxed">
+              <div className="bg-white rounded-3xl shadow-sm border border-line overflow-hidden">
+                <div className="bg-gradient-to-br from-brand/5 to-brand-accent/5 px-8 pt-8 pb-6 border-b border-line">
+                  <h1 className="text-2xl font-bold text-ink">Check in before your visit</h1>
+                  <p className="mt-1.5 text-body text-sm leading-relaxed">
                     Talk to Prelude for ~3 minutes. Your conversation is charted for your doctor as it happens — and you can ask what your visit will cost.
                   </p>
                 </div>
@@ -190,14 +188,14 @@ export default function IntakePage() {
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">Your name</label>
+                      <label className="block text-sm font-semibold text-ink mb-1.5">Your name</label>
                       <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name as it appears in your records"
-                        className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/15 focus:bg-white transition-all" />
+                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink placeholder-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">Appointment type</label>
+                      <label className="block text-sm font-semibold text-ink mb-1.5">Appointment type</label>
                       <select value={appointmentType} onChange={(e) => setAppointmentType(e.target.value)}
-                        className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 text-[#0F172A] focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/15 focus:bg-white transition-all">
+                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
                         <option>Sick visit</option>
                         <option>New patient visit</option>
                         <option>Annual physical</option>
@@ -206,30 +204,29 @@ export default function IntakePage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">Age range <span className="text-[#94A3B8] font-normal">(optional)</span></label>
+                      <label className="block text-sm font-semibold text-ink mb-1.5">Age range <span className="text-faint font-normal">(optional)</span></label>
                       <select value={ageRange} onChange={(e) => setAgeRange(e.target.value)}
-                        className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 text-[#0F172A] focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/15 focus:bg-white transition-all">
+                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
                         <option value="">Prefer not to say</option>
                         <option>18–24</option><option>25–34</option><option>35–44</option><option>45–54</option><option>55+</option>
                       </select>
                     </div>
                   </div>
-                  <button onClick={() => setStep('consent')} disabled={!name.trim()}
-                    className="w-full bg-[#00B894] hover:bg-[#00897B] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8] text-white font-semibold rounded-xl px-6 py-3.5 transition-all duration-200 shadow-sm hover:shadow-md disabled:shadow-none">
+                  <Btn onClick={() => setStep('consent')} disabled={!name.trim()} className="w-full px-6 py-3.5">
                     Continue →
-                  </button>
+                  </Btn>
                 </div>
               </div>
             )}
 
             {step === 'consent' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8F0] overflow-hidden">
-                <div className="bg-gradient-to-br from-blue-50 to-[#00B894]/5 px-8 pt-8 pb-6 border-b border-[#E2E8F0]">
-                  <h1 className="text-2xl font-bold text-[#0F172A]">Before we begin</h1>
-                  <p className="mt-1.5 text-[#64748B] text-sm">Please read and accept to continue.</p>
+              <div className="bg-white rounded-3xl shadow-sm border border-line overflow-hidden">
+                <div className="bg-gradient-to-br from-blue-50 to-brand/5 px-8 pt-8 pb-6 border-b border-line">
+                  <h1 className="text-2xl font-bold text-ink">Before we begin</h1>
+                  <p className="mt-1.5 text-body text-sm">Please read and accept to continue.</p>
                 </div>
                 <div className="px-8 py-6 space-y-5">
-                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3 text-sm text-[#0F172A] leading-relaxed">
+                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3 text-sm text-ink leading-relaxed">
                     {[
                       { label: 'What this is', text: 'An AI voice assistant that collects check-in information and charts it for your licensed provider.' },
                       { label: 'What this is not', text: 'Not medical advice, diagnosis, treatment, or crisis support.' },
@@ -237,21 +234,21 @@ export default function IntakePage() {
                       { label: 'Emergency', text: 'If you are in immediate danger, call 911 (or 988 for mental health crisis) now.' },
                     ].map(({ label, text }) => (
                       <div key={label} className="flex gap-2">
-                        <span className="shrink-0 text-[#00B894] font-bold mt-0.5">·</span>
-                        <p><strong className="text-[#0F172A]">{label}:</strong> {text}</p>
+                        <span className="shrink-0 text-brand font-bold mt-0.5">·</span>
+                        <p><strong className="text-ink">{label}:</strong> {text}</p>
                       </div>
                     ))}
                   </div>
                   <label className="flex items-start gap-3 cursor-pointer group">
-                    <input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} className="mt-1 accent-[#00B894] w-4 h-4" />
-                    <span className="text-sm text-[#0F172A] leading-relaxed">
+                    <input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} className="mt-1 accent-brand w-4 h-4" />
+                    <span className="text-sm text-ink leading-relaxed">
                       I understand this is an AI check-in assistant, not a clinician. I consent to my responses being charted for my provider&apos;s review.
                     </span>
                   </label>
                   <div className="flex gap-3 pt-1">
-                    <button onClick={() => setStep('form')} className="flex-1 bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#0F172A] font-semibold rounded-xl px-6 py-3.5 transition-colors border border-[#E2E8F0]">Back</button>
+                    <Btn variant="secondary" onClick={() => setStep('form')} className="flex-1 px-6 py-3.5">Back</Btn>
                     <button onClick={beginCheckIn} disabled={!consented || loading}
-                      className="flex-1 bg-[#00B894] hover:bg-[#00897B] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8] text-white font-semibold rounded-xl px-6 py-3.5 transition-all duration-200 shadow-sm disabled:shadow-none">
+                      className="flex-1 bg-brand hover:bg-brand-dark disabled:bg-line disabled:text-faint text-white font-semibold rounded-xl px-6 py-3.5 transition-all duration-200 shadow-sm disabled:shadow-none">
                       {loading ? 'Starting…' : 'Start Voice Check-in'}
                     </button>
                   </div>
@@ -260,17 +257,17 @@ export default function IntakePage() {
             )}
 
             {step === 'calling' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8F0] overflow-hidden">
-                <div className="px-8 pt-8 pb-6 border-b border-[#E2E8F0] bg-gradient-to-br from-[#00B894]/8 to-[#00CEB8]/5">
-                  <h1 className="text-2xl font-bold text-[#0F172A]">
+              <div className="bg-white rounded-3xl shadow-sm border border-line overflow-hidden">
+                <div className="px-8 pt-8 pb-6 border-b border-line bg-gradient-to-br from-brand/8 to-brand-accent/5">
+                  <h1 className="text-2xl font-bold text-ink">
                     {demoMode ? 'Demo Mode' : voiceState === 'ended' ? 'Check-in Complete' : voiceState === 'connecting' ? 'Connecting…' : 'Voice Check-in Active'}
                   </h1>
-                  <p className="mt-1.5 text-[#64748B] text-sm">
+                  <p className="mt-1.5 text-body text-sm">
                     {demoMode ? 'No voice keys configured — use the demo transcript to see the full pipeline.'
                       : 'Speak naturally. Ask what your visit will cost — Prelude checks your coverage live.'}
                   </p>
                   {!demoMode && (
-                    <p className="mt-2 text-[10px] uppercase tracking-widest text-[#94A3B8]">
+                    <p className="mt-2 text-[10px] uppercase tracking-widest text-faint">
                       Voice engine · {provider === 'grok' ? 'Grok Voice (fallback)' : 'Deepgram Voice Agent'}
                     </p>
                   )}
@@ -282,28 +279,28 @@ export default function IntakePage() {
 
                   {demoMode ? (
                     <div className="space-y-4">
-                      <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-5">
-                        <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wider mb-3">Demo transcript preview</p>
-                        <p className="text-sm text-[#64748B] leading-relaxed line-clamp-4">{DEMO_TRANSCRIPT}</p>
+                      <div className="bg-surface border border-line rounded-2xl p-5">
+                        <p className="text-xs font-semibold text-body uppercase tracking-wider mb-3">Demo transcript preview</p>
+                        <p className="text-sm text-body leading-relaxed line-clamp-4">{DEMO_TRANSCRIPT}</p>
                       </div>
                       <button onClick={() => finishCall(DEMO_TRANSCRIPT)} disabled={finishing}
-                        className="w-full bg-[#00B894] hover:bg-[#00897B] disabled:bg-[#E2E8F0] text-white font-semibold rounded-xl px-6 py-3.5 transition-all">
+                        className="w-full bg-brand hover:bg-brand-dark disabled:bg-line text-white font-semibold rounded-xl px-6 py-3.5 transition-all">
                         {finishing ? 'Charting to Medplum…' : 'Use Demo Transcript + Chart Visit'}
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-6">
-                      <div className="rounded-2xl p-10 text-center bg-[#F8FAFC] border border-[#E2E8F0]">
+                      <div className="rounded-2xl p-10 text-center bg-surface border border-line">
                         <Visualizer state={voiceState} />
                       </div>
 
                       {coverage && (
-                        <div className="bg-[#00B894]/5 border border-[#00B894]/30 rounded-2xl p-5">
-                          <p className="text-xs font-semibold text-[#00897B] uppercase tracking-widest mb-2">
+                        <div className="bg-brand/5 border border-brand/30 rounded-2xl p-5">
+                          <p className="text-xs font-semibold text-brand-dark uppercase tracking-widest mb-2">
                             Live coverage check · {coverage.source === 'stedi' ? 'Stedi test mode' : 'synthetic data'}
                           </p>
-                          <p className="text-sm text-[#0F172A] font-semibold">{coverage.payer} — {coverage.plan_status}</p>
-                          <p className="text-sm text-[#64748B] mt-1">
+                          <p className="text-sm text-ink font-semibold">{coverage.payer} — {coverage.plan_status}</p>
+                          <p className="text-sm text-body mt-1">
                             {coverage.copay != null ? `Copay ~$${coverage.copay}` : `Est. $${coverage.estimated_visit_cost.min}–$${coverage.estimated_visit_cost.max}`}
                             {coverage.deductible_remaining != null ? ` · Deductible remaining $${coverage.deductible_remaining}` : ''}
                           </p>
@@ -311,10 +308,10 @@ export default function IntakePage() {
                       )}
 
                       {transcript.length > 0 && (
-                        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-5 space-y-3 max-h-52 overflow-y-auto">
-                          <p className="text-xs font-semibold text-[#64748B] uppercase tracking-widest">Live transcript · charting as you speak</p>
+                        <div className="bg-surface border border-line rounded-2xl p-5 space-y-3 max-h-52 overflow-y-auto">
+                          <p className="text-xs font-semibold text-body uppercase tracking-widest">Live transcript · charting as you speak</p>
                           {transcript.map((u, i) => (
-                            <div key={i} className={`flex gap-2 text-sm ${u.role === 'agent' ? 'text-[#00897B]' : 'text-[#0F172A]'}`}>
+                            <div key={i} className={`flex gap-2 text-sm ${u.role === 'agent' ? 'text-brand-dark' : 'text-ink'}`}>
                               <span className="font-bold text-xs uppercase opacity-50 shrink-0 mt-0.5 w-14">{u.role === 'agent' ? 'Prelude' : 'You'}</span>
                               <span className="leading-relaxed">{u.content}</span>
                             </div>
@@ -323,14 +320,13 @@ export default function IntakePage() {
                       )}
 
                       {(voiceState === 'active' || voiceState === 'agent_speaking') && (
-                        <button onClick={() => finishCall()} disabled={finishing}
-                          className="w-full bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-semibold rounded-xl px-6 py-3.5 transition-colors">
+                        <Btn variant="dangerSoft" onClick={() => finishCall()} disabled={finishing} className="w-full px-6 py-3.5">
                           {finishing ? 'Charting to Medplum…' : 'End Check-in'}
-                        </button>
+                        </Btn>
                       )}
                       {(voiceState === 'ended' || voiceState === 'error') && !finishing && (
                         <button onClick={() => finishCall()}
-                          className="w-full bg-[#00B894] hover:bg-[#00897B] text-white font-semibold rounded-xl px-6 py-3.5 transition-all shadow-sm">
+                          className="w-full bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl px-6 py-3.5 transition-all shadow-sm">
                           Generate Visit Note →
                         </button>
                       )}
@@ -341,27 +337,27 @@ export default function IntakePage() {
             )}
 
             {step === 'complete' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8F0] overflow-hidden">
-                <div className="bg-gradient-to-br from-[#00B894]/8 to-[#00CEB8]/5 px-8 pt-10 pb-8 text-center">
+              <div className="bg-white rounded-3xl shadow-sm border border-line overflow-hidden">
+                <div className="bg-gradient-to-br from-brand/8 to-brand-accent/5 px-8 pt-10 pb-8 text-center">
                   <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                    className="w-20 h-20 bg-[#00B894] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-[#00B894]/30">
+                    className="w-20 h-20 bg-brand rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand/30">
                     <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </motion.div>
-                  <h1 className="text-2xl font-bold text-[#0F172A]">You&apos;re checked in</h1>
-                  <p className="mt-3 text-[#64748B] leading-relaxed text-sm max-w-sm mx-auto">
+                  <h1 className="text-2xl font-bold text-ink">You&apos;re checked in</h1>
+                  <p className="mt-3 text-body leading-relaxed text-sm max-w-sm mx-auto">
                     Your conversation was charted as FHIR resources in Medplum. Your provider will review the AI draft note before your visit.
                   </p>
                 </div>
                 <div className="px-8 py-6 space-y-3">
                   {noteId && (
                     <Link href={`/dashboard/${noteId}`}
-                      className="block text-center bg-[#00B894] hover:bg-[#00897B] text-white font-semibold rounded-xl px-6 py-3.5 transition-all shadow-sm">
+                      className="block text-center bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl px-6 py-3.5 transition-all shadow-sm">
                       View the provider&apos;s draft note →
                     </Link>
                   )}
-                  <Link href="/dashboard" className="block text-center text-sm text-[#00B894] hover:text-[#00897B] transition-colors font-medium py-2">
+                  <Link href="/dashboard" className="block text-center text-sm text-brand hover:text-brand-dark transition-colors font-medium py-2">
                     Provider dashboard →
                   </Link>
                 </div>

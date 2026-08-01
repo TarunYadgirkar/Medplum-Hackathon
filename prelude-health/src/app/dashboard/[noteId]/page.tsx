@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Nav } from '@/components/primitives';
 
 interface Note {
   id: string;
@@ -65,7 +66,7 @@ const RISK_ACTIVE: Record<string, string> = {
 };
 
 const SOAP_LABELS = [
-  { key: 'soap_subjective' as const, label: 'S — Subjective', color: 'border-[#00B894]', labelColor: 'text-[#00897B]' },
+  { key: 'soap_subjective' as const, label: 'S — Subjective', color: 'border-brand', labelColor: 'text-brand-dark' },
   { key: 'soap_objective'  as const, label: 'O — Objective',  color: 'border-blue-400',  labelColor: 'text-blue-600'  },
   { key: 'soap_assessment' as const, label: 'A — Assessment', color: 'border-purple-400', labelColor: 'text-purple-600' },
   { key: 'soap_plan'       as const, label: 'P — Plan',       color: 'border-amber-400',  labelColor: 'text-amber-600'  },
@@ -99,9 +100,9 @@ ${n.soap_plan || ''}`;
 
 function SectionCard({ title, badge, children }: { title: string; badge?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm p-5 space-y-3">
+    <section className="bg-white border border-line rounded-2xl shadow-sm p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-[#0F172A]">{title}</h2>
+        <h2 className="font-semibold text-ink">{title}</h2>
         {badge}
       </div>
       {children}
@@ -109,12 +110,12 @@ function SectionCard({ title, badge, children }: { title: string; badge?: React.
   );
 }
 
-function BulletList({ items, color = 'bg-[#00B894]', empty }: { items: string[]; color?: string; empty: string }) {
-  if (!items?.length) return <p className="text-sm text-[#94A3B8] italic">{empty}</p>;
+function BulletList({ items, color = 'bg-brand', empty }: { items: string[]; color?: string; empty: string }) {
+  if (!items?.length) return <p className="text-sm text-faint italic">{empty}</p>;
   return (
     <ul className="space-y-1.5">
       {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-2.5 text-sm text-[#64748B]">
+        <li key={i} className="flex items-start gap-2.5 text-sm text-body">
           <span className={`w-1.5 h-1.5 rounded-full ${color} shrink-0 mt-1.5`} />
           {item}
         </li>
@@ -185,10 +186,10 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-2 border-[#00B894]/30 border-t-[#00B894] rounded-full animate-spin mx-auto" />
-          <p className="text-[#64748B] text-sm">Loading note…</p>
+          <div className="w-8 h-8 border-2 border-brand/30 border-t-brand rounded-full animate-spin mx-auto" />
+          <p className="text-body text-sm">Loading note…</p>
         </div>
       </div>
     );
@@ -196,27 +197,28 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
 
   if (!note) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-[#64748B]">
+      <div className="min-h-screen bg-surface flex items-center justify-center text-body">
         Note not found.{' '}
-        <Link href="/dashboard" className="text-[#00B894] ml-2 font-medium">Back to dashboard</Link>
+        <Link href="/dashboard" className="text-brand ml-2 font-medium">Back to dashboard</Link>
       </div>
     );
   }
 
-  const riskBg = { high: 'bg-red-50 border-red-200', medium: 'bg-amber-50 border-amber-200', low: 'bg-[#F8FAFC] border-[#E2E8F0]', none: 'bg-[#F8FAFC] border-[#E2E8F0]' };
+  const riskBg = { high: 'bg-red-50 border-red-200', medium: 'bg-amber-50 border-amber-200', low: 'bg-surface border-line', none: 'bg-surface border-line' };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
+    <div className="min-h-screen bg-surface flex flex-col">
       {/* ── Nav ── */}
-      <nav className="bg-white border-b border-[#E2E8F0] px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="font-bold text-xl text-[#00B894] tracking-tight">Prelude</Link>
-        <Link href="/dashboard" className="text-sm text-[#64748B] hover:text-[#00B894] transition-colors font-medium flex items-center gap-1.5">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Dashboard
-        </Link>
-      </nav>
+      <Nav
+        right={
+          <Link href="/dashboard" className="text-sm text-body hover:text-brand transition-colors font-medium flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Dashboard
+          </Link>
+        }
+      />
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
         <motion.div
@@ -239,7 +241,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                       className={`text-xs font-semibold px-3 py-1.5 rounded-full border capitalize transition-all ${
                         note.risk_level === level
                           ? RISK_ACTIVE[level] ?? RISK_ACTIVE.none
-                          : 'bg-white text-[#64748B] border-[#E2E8F0] hover:border-[#00B894]/40 hover:text-[#00B894]'
+                          : 'bg-white text-body border-line hover:border-brand/40 hover:text-brand'
                       }`}
                     >
                       {level}
@@ -254,8 +256,8 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-[#0F172A]">Intake Note</h1>
-                  <p className="text-sm text-[#64748B] mt-1">
+                  <h1 className="text-2xl font-bold text-ink">Intake Note</h1>
+                  <p className="text-sm text-body mt-1">
                     Generated {new Date(note.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
                     {note.reviewed_at && (
                       <span className="text-emerald-600 ml-2">
@@ -269,14 +271,14 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => setEditing(!editing)}
-                  className="bg-white hover:bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] text-sm font-medium rounded-xl px-4 py-2.5 transition-colors shadow-sm"
+                  className="bg-white hover:bg-surface border border-line text-ink text-sm font-medium rounded-xl px-4 py-2.5 transition-colors shadow-sm"
                 >
                   {editing ? 'Cancel' : 'Edit Note'}
                 </button>
                 <button
                   onClick={approve}
                   disabled={saving}
-                  className="bg-[#00B894] hover:bg-[#00897B] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8] text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition-colors shadow-sm"
+                  className="bg-brand hover:bg-brand-dark disabled:bg-line disabled:text-faint text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition-colors shadow-sm"
                 >
                   {saving ? (
                     <span className="flex items-center gap-1.5">
@@ -319,23 +321,23 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
           {/* ── Patient summary ── */}
           <SectionCard title="Patient Summary">
             {note.ai_summary
-              ? <p className="text-sm text-[#64748B] leading-relaxed">{note.ai_summary}</p>
-              : <p className="text-sm text-[#94A3B8] italic">{EMPTY}</p>}
-            <div className="pt-3 border-t border-[#E2E8F0]">
-              <p className="text-xs font-bold text-[#94A3B8] uppercase tracking-widest mb-1.5">Chief Concern</p>
+              ? <p className="text-sm text-body leading-relaxed">{note.ai_summary}</p>
+              : <p className="text-sm text-faint italic">{EMPTY}</p>}
+            <div className="pt-3 border-t border-line">
+              <p className="text-xs font-bold text-faint uppercase tracking-widest mb-1.5">Chief Concern</p>
               {note.chief_concern
-                ? <p className="text-sm text-[#0F172A] leading-relaxed">{note.chief_concern}</p>
-                : <p className="text-sm text-[#94A3B8] italic">{EMPTY}</p>}
+                ? <p className="text-sm text-ink leading-relaxed">{note.chief_concern}</p>
+                : <p className="text-sm text-faint italic">{EMPTY}</p>}
             </div>
           </SectionCard>
 
           {/* ── Symptoms & Goals ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SectionCard title="Patient-Reported Symptoms">
-              <BulletList items={note.symptoms_reported} color="bg-[#00B894]" empty={EMPTY} />
+              <BulletList items={note.symptoms_reported} color="bg-brand" empty={EMPTY} />
             </SectionCard>
             <SectionCard title="Patient Goals">
-              <BulletList items={note.patient_goals} color="bg-[#00CEB8]" empty={EMPTY} />
+              <BulletList items={note.patient_goals} color="bg-brand-accent" empty={EMPTY} />
             </SectionCard>
           </div>
 
@@ -352,10 +354,10 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                     </span>
                   }
                 >
-                  <p className="text-sm text-[#64748B] leading-relaxed">{note.care_recommendation.reasoning}</p>
+                  <p className="text-sm text-body leading-relaxed">{note.care_recommendation.reasoning}</p>
                   {note.care_recommendation.red_flags_to_watch?.length > 0 && (
-                    <div className="pt-3 border-t border-[#E2E8F0]">
-                      <p className="text-xs font-bold text-[#94A3B8] uppercase tracking-widest mb-1.5">Escalate if</p>
+                    <div className="pt-3 border-t border-line">
+                      <p className="text-xs font-bold text-faint uppercase tracking-widest mb-1.5">Escalate if</p>
                       <BulletList items={note.care_recommendation.red_flags_to_watch} color="bg-red-400" empty={EMPTY} />
                     </div>
                   )}
@@ -365,27 +367,27 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                 <SectionCard
                   title="Coverage & Cost"
                   badge={
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#00B894]/10 text-[#00897B] uppercase tracking-wider">
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-brand/10 text-brand-dark uppercase tracking-wider">
                       {note.coverage.source === 'stedi' ? 'Stedi eligibility' : 'Synthetic'}
                     </span>
                   }
                 >
-                  <p className="text-sm font-semibold text-[#0F172A]">{note.coverage.payer} — {note.coverage.plan_status}</p>
+                  <p className="text-sm font-semibold text-ink">{note.coverage.payer} — {note.coverage.plan_status}</p>
                   <div className="grid grid-cols-3 gap-3 pt-2">
                     <div>
-                      <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Copay</p>
-                      <p className="text-lg font-bold text-[#0F172A]">{note.coverage.copay != null ? `$${note.coverage.copay}` : '—'}</p>
+                      <p className="text-[10px] font-bold text-faint uppercase tracking-widest">Copay</p>
+                      <p className="text-lg font-bold text-ink">{note.coverage.copay != null ? `$${note.coverage.copay}` : '—'}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Deductible left</p>
-                      <p className="text-lg font-bold text-[#0F172A]">{note.coverage.deductible_remaining != null ? `$${note.coverage.deductible_remaining}` : '—'}</p>
+                      <p className="text-[10px] font-bold text-faint uppercase tracking-widest">Deductible left</p>
+                      <p className="text-lg font-bold text-ink">{note.coverage.deductible_remaining != null ? `$${note.coverage.deductible_remaining}` : '—'}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Est. visit</p>
-                      <p className="text-lg font-bold text-[#0F172A]">${note.coverage.estimated_visit_cost.min}–${note.coverage.estimated_visit_cost.max}</p>
+                      <p className="text-[10px] font-bold text-faint uppercase tracking-widest">Est. visit</p>
+                      <p className="text-lg font-bold text-ink">${note.coverage.estimated_visit_cost.min}–${note.coverage.estimated_visit_cost.max}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-[#94A3B8] pt-2 border-t border-[#E2E8F0]">{note.coverage.spoken_summary}</p>
+                  <p className="text-xs text-faint pt-2 border-t border-line">{note.coverage.spoken_summary}</p>
                 </SectionCard>
               )}
             </div>
@@ -394,21 +396,21 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
           {/* ── SOAP Note ── */}
           <SectionCard
             title="SOAP Note Draft"
-            badge={<span className="text-xs text-[#94A3B8]">AI generated · provider review required</span>}
+            badge={<span className="text-xs text-faint">AI generated · provider review required</span>}
           >
             {editing ? (
               <textarea
                 value={editedNote}
                 onChange={(e) => setEditedNote(e.target.value)}
                 rows={20}
-                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 text-sm text-[#0F172A] font-mono focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/20 resize-none transition-colors"
+                className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm text-ink font-mono focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none transition-colors"
               />
             ) : (
               <div className="space-y-4">
                 {SOAP_LABELS.map(({ key, label, color, labelColor }) => (
                   <div key={key} className={`border-l-[3px] ${color} pl-4 py-1`}>
                     <p className={`text-[11px] font-bold ${labelColor} uppercase tracking-widest mb-1.5`}>{label}</p>
-                    <p className="text-sm text-[#64748B] leading-relaxed">{note[key] || 'Not available.'}</p>
+                    <p className="text-sm text-body leading-relaxed">{note[key] || 'Not available.'}</p>
                   </div>
                 ))}
               </div>
@@ -420,20 +422,20 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
             {note.suggested_questions?.length > 0 ? (
               <ol className="space-y-2.5">
                 {note.suggested_questions.map((q, i) => (
-                  <li key={i} className="flex gap-3 text-sm text-[#64748B]">
-                    <span className="text-[#00B894] font-bold shrink-0 tabular-nums w-5">{i + 1}.</span>
+                  <li key={i} className="flex gap-3 text-sm text-body">
+                    <span className="text-brand font-bold shrink-0 tabular-nums w-5">{i + 1}.</span>
                     <span className="leading-relaxed">{q}</span>
                   </li>
                 ))}
               </ol>
             ) : (
-              <p className="text-sm text-[#94A3B8] italic">Not enough information to generate suggested questions.</p>
+              <p className="text-sm text-faint italic">Not enough information to generate suggested questions.</p>
             )}
           </SectionCard>
 
           {/* ── Follow-up ── */}
           <SectionCard title="Follow-Up Actions">
-            <BulletList items={note.follow_up_actions} color="bg-[#64748B]" empty="Not enough information to generate follow-up actions." />
+            <BulletList items={note.follow_up_actions} color="bg-body" empty="Not enough information to generate follow-up actions." />
           </SectionCard>
 
           {/* ── Transcript ── */}
@@ -442,22 +444,22 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
             badge={
               <button
                 onClick={showTranscript ? () => setShowTranscript(false) : loadTranscript}
-                className="text-sm text-[#00B894] hover:text-[#00897B] transition-colors font-medium"
+                className="text-sm text-brand hover:text-brand-dark transition-colors font-medium"
               >
                 {showTranscript ? 'Hide' : 'Show transcript'}
               </button>
             }
           >
             {showTranscript && transcript && (
-              <pre className="text-xs text-[#64748B] whitespace-pre-wrap leading-relaxed font-mono max-h-80 overflow-y-auto bg-[#F8FAFC] rounded-xl p-4 border border-[#E2E8F0]">
+              <pre className="text-xs text-body whitespace-pre-wrap leading-relaxed font-mono max-h-80 overflow-y-auto bg-surface rounded-xl p-4 border border-line">
                 {transcript}
               </pre>
             )}
             {showTranscript && !transcript && (
-              <p className="text-sm text-[#94A3B8]">Transcript not available.</p>
+              <p className="text-sm text-faint">Transcript not available.</p>
             )}
             {!showTranscript && (
-              <p className="text-sm text-[#94A3B8]">Full conversation transcript available on request.</p>
+              <p className="text-sm text-faint">Full conversation transcript available on request.</p>
             )}
           </SectionCard>
         </motion.div>
