@@ -129,3 +129,14 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   click. ⚠ OPENAI_API_KEY is INVALIDATED (leaked-key auto-revoke; generate-note silently
   demo-fallbacks) — need fresh key, local .env only. ⚠ rebases onto rewritten main DELETE
   .env from worktrees — re-copy it after rebasing.
+
+- [1:0x] [full-scope] Carepath features ported: (1) Epic MyChart import — 24-system modal,
+  simulated SMART on FHIR, /records page; imported chart feeds the voice prompt (fenced as
+  untrusted data) AND the Moss history index via intake-session historyDocs (sanitized
+  server-side). (2) MedCard — /medcard, 3-col card + pill scanner (graceful no-key state).
+  (3) Reddit communities — /api/communities (OpenAI w/ curated keyless fallback + Arctic
+  Shift enrichment) on the provider note page. Reviews run (react/ts/security): CRITICAL
+  server-side sanitization fixed, size caps + localStorage validation added; known gaps
+  left per MVP scope: no auth on patientId routes, no abort guards on scanner/communities
+  fetches. Deployed: prelude-health.vercel.app (Vercel project linked to GitHub, root
+  prelude-health, auto-deploy on main). Vercel env vars pending Tarun (fresh OpenAI key!).

@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Nav } from '@/components/primitives';
+import { CommunitySuggestions } from '@/components/communities/CommunitySuggestions';
 
 interface Note {
   id: string;
@@ -391,6 +392,14 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                 </SectionCard>
               )}
             </div>
+          )}
+
+          {/* ── Peer communities (carepath layer: Reddit via Arctic Shift) ── */}
+          {(note.chief_concern || note.symptoms_reported?.length) && (
+            <CommunitySuggestions
+              summary={[note.chief_concern, ...(note.symptoms_reported || [])].filter(Boolean).join('. ')}
+              riskFlags={note.risk_flags}
+            />
           )}
 
           {/* ── SOAP Note ── */}
