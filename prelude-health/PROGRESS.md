@@ -46,3 +46,9 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   Gemini→OpenAI gpt-4o-mini (OPENAI_API_KEY, optional OPENAI_MODEL). Repo history was
   rewritten to remove the committed .env — keys now live ONLY in local .env files; get
   them from Tarun's chat, never commit them (repo is public again).
+- [11:55] [lane-1] LANE 1 COMPLETE. Real-browser intake call confirmed by Tarun on localhost:
+  mic capture, greeting audio playback, live transcript charting all working in Chrome.
+  Full lane-1 surface now live-verified: auth grant → JWT → WS, Settings accepted,
+  KeepAlive, barge-in path untouched, FunctionCallRequest round trip (both functions),
+  client_side guard added. Grok backup engine intentionally NOT live-tested (Deepgram is
+  the demo engine per SETUP_KEYS; interfaces unchanged so swap still works if needed).
