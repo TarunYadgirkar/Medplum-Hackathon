@@ -5,7 +5,7 @@ import { checkEligibility } from '@/lib/stedi';
 import type { NoteGenerationResult } from '@/types';
 
 // Adapted from klarity-voicenote's generate-note route:
-// transcript → Gemini → structured note + care recommendation → FHIR in Medplum.
+// transcript → OpenAI → structured note + care recommendation → FHIR in Medplum.
 
 const PROMPT = `You are an AI clinical documentation assistant for a primary-care clinic's pre-visit intake system.
 Your job is to convert a patient voice-intake transcript into (1) a provider-reviewed draft note and (2) a care-level recommendation.
@@ -52,16 +52,16 @@ export async function POST(req: NextRequest) {
   // 1. Persist transcript + close the FHIR Encounter.
   await completeIntake({ patientId, encounterId, transcript });
 
-  // 2. Structured note via Gemini (demo note fallback keeps the app usable keyless).
+  // 2. Structured note via OpenAI (demo note fallback keeps the app usable keyless).
   let result: NoteGenerationResult;
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey) {
     result = getDemoNote();
   } else {
     try {
-      result = await generateWithGemini(geminiKey, transcript);
+      result = await generateWithOpenAI(openaiKey, transcript);
     } catch (err) {
-      console.error('Gemini error:', err);
+      console.error('OpenAI error:', err);
       result = getDemoNote();
     }
   }
@@ -80,23 +80,26 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, noteId, result, coverage });
 }
 
-async function generateWithGemini(apiKey: string, transcript: string): Promise<NoteGenerationResult> {
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: `${PROMPT}\n\nTranscript:\n${transcript}` }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: 'application/json' },
-      }),
-    }
-  );
-  if (!response.ok) throw new Error(`Gemini returned ${response.status}: ${await response.text()}`);
+async function generateWithOpenAI(apiKey: string, transcript: string): Promise<NoteGenerationResult> {
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model,
+      temperature: 0.2,
+      max_tokens: 4096,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: PROMPT },
+        { role: 'user', content: `Transcript:\n${transcript}` },
+      ],
+    }),
+  });
+  if (!response.ok) throw new Error(`OpenAI returned ${response.status}: ${await response.text()}`);
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Gemini response did not include text output');
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('OpenAI response did not include text output');
   return JSON.parse(text) as NoteGenerationResult;
 }
 

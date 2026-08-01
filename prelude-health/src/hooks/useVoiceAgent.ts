@@ -74,6 +74,7 @@ export function useVoiceAgent() {
   const handleFunctionCall = useCallback(async (msg: any, ws: WebSocket) => {
     const calls: any[] = Array.isArray(msg.functions) ? msg.functions : [msg];
     for (const call of calls) {
+      if (call.client_side === false) continue; // server-side calls are not ours to answer
       const name = call.name || call.function_name;
       const id = call.id || call.function_call_id;
       let parsedArgs: Record<string, unknown> = {};

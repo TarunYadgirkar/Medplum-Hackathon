@@ -22,9 +22,10 @@ then **redeploy** (env changes don't apply to old deployments). CLI alternative:
 5. Verify: run a check-in, then open app.medplum.com → Patient / Encounter / Composition —
    your intake should appear as resources. This is the money shot for the demo video.
 
-## 3. Gemini (note generation) — 2 min
-1. aistudio.google.com → **Get API key** (same key type klarity used).
-2. Set `GEMINI_API_KEY`. Leave `GEMINI_MODEL=gemini-2.5-flash-lite`.
+## 3. OpenAI (note generation) — 2 min
+1. platform.openai.com → API keys.
+2. Set `OPENAI_API_KEY`. Optional: `OPENAI_MODEL` (default `gpt-4o-mini`).
+   (Gemini was replaced by OpenAI on hackathon day — key already in the committed `.env`.)
 
 ## 4. Stedi (eligibility, optional but a big demo moment) — 5 min
 1. stedi.com → sign up → get a **test API key** (test mode is free, mock payers only).

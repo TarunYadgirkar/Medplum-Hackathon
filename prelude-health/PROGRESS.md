@@ -27,3 +27,22 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
 ## Hackathon day
 
 - (append here)
+- [09:xx] [lane-1] Live Deepgram WS probe (real key) validated the EXACT current
+  `buildAgentSettings` payload: nova-3-medical + gpt-4o-mini (temp 0.6, functions at
+  agent.think.functions) + aura-2-thalia-en all accepted — SettingsApplied + greeting audio,
+  zero Error messages. Auth grant → JWT → `['bearer', jwt]` subprotocol confirmed working.
+  FunctionCallRequest live shape = `functions[]` with `id`/`name`/`arguments`(JSON string),
+  flat FunctionCallResponse — existing defensive handler in useVoiceAgent.ts already matches.
+  NO code changes needed; `npm run build` green. Remaining lane-1 risk is mic/speaker loop in
+  a real browser, not the Settings schema.
+
+- [11:30] [lane-1] Live function-calling round trip verified against the real agent WS:
+  streamed synthesized patient speech ("rash on my arm... how much will this visit cost"),
+  got TWO FunctionCallRequests (lookup_patient_history, check_insurance_coverage) in the
+  documented `functions[]` shape (`id`/`name`/`arguments` JSON string, `client_side:true`),
+  replied with FunctionCallResponse, agent resumed speaking using the injected answers.
+  Added a `client_side === false` guard in useVoiceAgent.ts. Note: server echoes each
+  FunctionCallResponse back — harmless, switch ignores it. Note generation swapped
+  Gemini→OpenAI gpt-4o-mini (OPENAI_API_KEY, optional OPENAI_MODEL). Repo history was
+  rewritten to remove the committed .env — keys now live ONLY in local .env files; get
+  them from Tarun's chat, never commit them (repo is public again).
