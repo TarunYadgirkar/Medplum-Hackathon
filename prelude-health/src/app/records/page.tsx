@@ -15,15 +15,25 @@ import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecor
 import { ChartTimeline } from '@/components/records/ChartTimeline';
 import { RecordSummaryStrip } from '@/components/records/RecordSummaryStrip';
 
-type RecordTab = 'all' | 'timeline' | 'medications' | 'allergies' | 'labs' | 'visits';
+type RecordTab =
+  | 'all'
+  | 'timeline'
+  | 'labs'
+  | 'medications'
+  | 'visits'
+  | 'immunizations'
+  | 'allergies'
+  | 'conditions';
 
 const TABS: { id: RecordTab; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'timeline', label: 'Timeline' },
+  { id: 'labs', label: 'Test Results' },
   { id: 'medications', label: 'Medications' },
-  { id: 'allergies', label: 'Allergies' },
-  { id: 'labs', label: 'Labs' },
   { id: 'visits', label: 'Visits' },
+  { id: 'immunizations', label: 'Immunizations' },
+  { id: 'allergies', label: 'Allergies' },
+  { id: 'conditions', label: 'Health Issues' },
 ];
 
 type Snapshot = EpicImportState | null | undefined;
@@ -210,38 +220,8 @@ export default function RecordsPage() {
 
         {shows('timeline') && <ChartTimeline record={record} />}
 
-        {shows('medications') && (
-        <SectionCard title="Medications">
-          <ul className="flex flex-col gap-4">
-            {record.medications.map((med) => (
-              <li key={med.name} className="text-sm">
-                <p className="font-semibold text-ink">{med.name}</p>
-                <p className="mt-0.5 text-body">
-                  {med.frequency} — prescribed by {med.prescriber}, started {med.started}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-        )}
-
-        {shows('allergies') && (
-        <SectionCard title="Allergies">
-          <ul className="flex flex-col gap-4">
-            {record.allergies.map((allergy) => (
-              <li key={allergy.substance} className="text-sm">
-                <p className="font-semibold text-ink">{allergy.substance}</p>
-                <p className="mt-0.5 text-body">
-                  {allergy.reaction} — {allergy.severity}, recorded {allergy.recorded}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-        )}
-
         {shows('labs') && (
-        <SectionCard title="Lab Results">
+        <SectionCard title="Test Results">
           <ul className="flex flex-col divide-y divide-line">
             {record.labResults.map((lab) => (
               <li key={lab.name} className="flex items-start justify-between gap-4 py-4 text-sm first:pt-0 last:pb-0">
@@ -263,14 +243,94 @@ export default function RecordsPage() {
         </SectionCard>
         )}
 
+        {shows('medications') && (
+        <SectionCard title="Medications">
+          <ul className="flex flex-col gap-4">
+            {record.medications.map((med) => (
+              <li key={med.name} className="text-sm">
+                <p className="font-semibold text-ink">{med.name}</p>
+                <p className="mt-0.5 text-body">
+                  {med.frequency} — prescribed by {med.prescriber}, started {med.started}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+        )}
+
         {shows('visits') && (
-        <SectionCard title="Recent Encounters">
+        <SectionCard title="Visits">
+          {record.upcomingVisits.length > 0 && (
+            <div className="mb-5">
+              <p className="mb-2.5 text-xs font-bold uppercase tracking-widest text-faint">Upcoming</p>
+              <ul className="flex flex-col gap-4">
+                {record.upcomingVisits.map((visit) => (
+                  <li key={`${visit.date}-${visit.type}`} className="text-sm">
+                    <p className="font-semibold text-ink">{visit.type}</p>
+                    <p className="mt-0.5 text-body">
+                      {visit.date} — {visit.provider}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {record.upcomingVisits.length > 0 && (
+            <p className="mb-2.5 text-xs font-bold uppercase tracking-widest text-faint">Past</p>
+          )}
           <ul className="flex flex-col gap-4">
             {record.recentEncounters.map((enc) => (
               <li key={`${enc.date}-${enc.type}`} className="text-sm">
                 <p className="font-semibold text-ink">{enc.type}</p>
                 <p className="mt-0.5 text-body">
                   {enc.date} — {enc.provider}, {enc.facility}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+        )}
+
+        {shows('immunizations') && (
+        <SectionCard title="Immunizations">
+          {record.immunizations.length === 0 ? (
+            <p className="text-sm text-body">No immunizations on file.</p>
+          ) : (
+            <ul className="flex flex-col gap-4">
+              {record.immunizations.map((imm) => (
+                <li key={imm.name} className="text-sm">
+                  <p className="font-semibold text-ink">{imm.name}</p>
+                  <p className="mt-0.5 text-body">{imm.date}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+        )}
+
+        {shows('allergies') && (
+        <SectionCard title="Allergies">
+          <ul className="flex flex-col gap-4">
+            {record.allergies.map((allergy) => (
+              <li key={allergy.substance} className="text-sm">
+                <p className="font-semibold text-ink">{allergy.substance}</p>
+                <p className="mt-0.5 text-body">
+                  {allergy.reaction} — {allergy.severity}, recorded {allergy.recorded}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+        )}
+
+        {shows('conditions') && (
+        <SectionCard title="Health Issues">
+          <ul className="flex flex-col gap-4">
+            {record.conditions.map((cond) => (
+              <li key={cond.name} className="text-sm">
+                <p className="font-semibold text-ink">{cond.name}</p>
+                <p className="mt-0.5 text-body">
+                  {cond.icd10} — {cond.status}, diagnosed {cond.diagnosed}
                 </p>
               </li>
             ))}

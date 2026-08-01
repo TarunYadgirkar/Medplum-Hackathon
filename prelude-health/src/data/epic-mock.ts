@@ -66,6 +66,14 @@ export const EPIC_FHIR_MOCK = {
     { name: 'LDL Cholesterol', value: '118 mg/dL', date: '2026-05-15', reference: 'Optimal < 100 mg/dL', flag: 'BORDERLINE' },
     { name: 'Serum Creatinine', value: '0.9 mg/dL', date: '2026-05-15', reference: 'Normal 0.6–1.1', flag: 'NORMAL' },
   ],
+  immunizations: [
+    { name: 'COVID-19 mRNA booster', date: '2025-10-12' },
+    { name: 'Influenza, quadrivalent', date: '2025-09-28' },
+    { name: 'Tdap (tetanus, diphtheria, pertussis)', date: '2019-04-03' },
+  ],
+  upcomingVisits: [
+    { date: '2026-08-15', type: 'Office visit — Annual physical', provider: 'Dr. Sarah Chen' },
+  ],
 };
 
 export type EpicImportResult = typeof EPIC_FHIR_MOCK;

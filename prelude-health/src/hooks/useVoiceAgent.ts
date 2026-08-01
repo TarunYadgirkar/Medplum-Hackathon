@@ -17,6 +17,7 @@ interface StartArgs {
   patientId: string;
   patientName: string;
   appointmentType: string;
+  callSeconds?: number;
 }
 
 export function useVoiceAgent() {

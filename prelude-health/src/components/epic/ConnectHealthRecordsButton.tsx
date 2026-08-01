@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { Btn } from '@/components/primitives';
 import { ConnectHealthRecordsModal } from './ConnectHealthRecordsModal';
 
-export function ConnectHealthRecordsButton() {
+type Props = {
+  patientName?: string;
+};
+
+export function ConnectHealthRecordsButton({ patientName }: Props = {}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -22,7 +26,7 @@ export function ConnectHealthRecordsButton() {
         </svg>
         Import from Epic MyChart
       </Btn>
-      {isOpen && <ConnectHealthRecordsModal onClose={() => setIsOpen(false)} />}
+      {isOpen && <ConnectHealthRecordsModal patientName={patientName} onClose={() => setIsOpen(false)} />}
     </>
   );
 }

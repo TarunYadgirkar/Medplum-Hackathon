@@ -9,12 +9,27 @@ import { sanitizeField } from '@/lib/medcard';
 
 export const AGENT_WS_URL = 'wss://agent.deepgram.com/v1/agent/converse';
 
+// Pacing instructions per selected call length (seconds).
+export function buildPaceBlock(callSeconds?: number): string {
+  if (!callSeconds || callSeconds >= 280) {
+    return `PACE: You have about five minutes — be thorough. Cover onset, severity, modifiers, related symptoms, medications tried, and check history before closing.\n\n`;
+  }
+  if (callSeconds <= 40) {
+    return `PACE — RAPID DEMO, 30 SECONDS TOTAL: greet in one short sentence, ask the chief concern, at most ONE follow-up question, then immediately close with a one-line recap. Every reply is ONE short sentence. Skip anything optional.\n\n`;
+  }
+  if (callSeconds <= 90) {
+    return `PACE: You have one minute total. Chief concern, one or two follow-ups, offer the cost check in passing, close with a one-line recap. Replies are one short sentence each.\n\n`;
+  }
+  return `PACE: You have about three minutes. Chief concern, two or three follow-ups, history and cost checks when relevant, then close.\n\n`;
+}
+
 export function buildAgentSettings(args: {
   patientName: string;
   appointmentType: string;
   chartContext?: string | null;
   chartSystemName?: string | null;
   keyterms?: string[];
+  callSeconds?: number;
 }) {
   const patientName = sanitizeField(args.patientName);
   const appointmentType = sanitizeField(args.appointmentType);
@@ -30,7 +45,7 @@ Your job, in order:
 3. Ask if they have questions about cost or insurance. If they do (or if they mention cost), call check_insurance_coverage and relay the copay/estimate in plain language.
 4. Ask if there is anything else the doctor should know, then close: their answers will be summarized for the provider to review before the visit.
 
-Conversation style — this is what makes you feel human:
+${buildPaceBlock(args.callSeconds)}Conversation style — this is what makes you feel human:
 - ONE question at a time. Never stack two questions in a single turn.
 - Briefly acknowledge what they said before asking the next question ("Three days, got it — and does anything make it worse?").
 - Use their first name at most twice in the whole conversation, never in consecutive turns.
@@ -42,7 +57,7 @@ Conversation style — this is what makes you feel human:
 Hard rules:
 - You are NOT a doctor. Never diagnose, prescribe, or give treatment advice.
 - If they describe emergency symptoms (chest pain, trouble breathing, stroke signs, suicidal intent), immediately tell them to call 911 (or 988 for mental health crisis) and end the intake.
-- Keep every reply to 1-3 short sentences. This is a voice conversation — be natural and concise.
+- Keep every reply to 1-2 short sentences. This is a voice conversation — be natural and brief; never monologue.
 - Do not invent history. Only reference history returned by lookup_patient_history or the connected records above.`;
 
   return {
@@ -97,9 +112,11 @@ Hard rules:
       speak: {
         provider: { type: 'deepgram', model: 'aura-2-thalia-en' },
       },
-      greeting: args.chartSystemName
-        ? `Hi ${patientName.split(' ')[0]}, I'm Prelude, your clinic's intake assistant. I already have your records from ${sanitizeField(args.chartSystemName)}, so I won't make you repeat your history. This takes about three minutes — so, what brings you in?`
-        : `Hi ${patientName.split(' ')[0]}, I'm Prelude, your clinic's intake assistant. I'll chart everything for your doctor as we talk — this takes about three minutes. So, what brings you in?`,
+      greeting: (args.callSeconds && args.callSeconds <= 40)
+        ? `Hi ${patientName.split(' ')[0]}, I'm Prelude — quick check-in for your doctor. What brings you in?`
+        : args.chartSystemName
+        ? `Hi ${patientName.split(' ')[0]}, I'm Prelude, your clinic's intake assistant. I already have your records from ${sanitizeField(args.chartSystemName)}, so I won't make you repeat your history. So, what brings you in?`
+        : `Hi ${patientName.split(' ')[0]}, I'm Prelude, your clinic's intake assistant. I'll chart everything for your doctor as we talk. So, what brings you in?`,
     },
   };
 }

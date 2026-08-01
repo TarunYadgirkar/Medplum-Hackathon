@@ -28,14 +28,17 @@ const DOT = {
   labNormal: 'bg-emerald-500 ring-emerald-100',
   labWarn: 'bg-amber-500 ring-amber-100',
   labAlert: 'bg-red-500 ring-red-100',
+  immunization: 'bg-violet-500 ring-violet-100',
+  upcoming: 'border-2 border-brand bg-white ring-brand-light',
 } as const;
 
 const LEGEND = [
   { label: 'Visits', dotClass: DOT.encounter },
   { label: 'Medications', dotClass: DOT.medication },
   { label: 'Allergies', dotClass: DOT.allergy },
-  { label: 'Conditions', dotClass: DOT.condition },
-  { label: 'Labs', dotClass: DOT.labNormal },
+  { label: 'Health Issues', dotClass: DOT.condition },
+  { label: 'Test Results', dotClass: DOT.labNormal },
+  { label: 'Immunizations', dotClass: DOT.immunization },
 ] as const;
 
 function labDotClass(flag: string): string {
@@ -123,6 +126,9 @@ function buildEvents(record: EpicImportResult): TimelineEvent[] {
         DOT.condition,
       ),
     ),
+    ...record.immunizations.map((imm, i) =>
+      makeEvent(`imm-${i}`, imm.date, imm.name, 'Immunization', DOT.immunization),
+    ),
   ];
 
   return [...events].sort((a, b) => {
@@ -148,8 +154,17 @@ function groupEvents(events: TimelineEvent[]): Group[] {
   }, []);
 }
 
+function buildUpcomingGroup(record: EpicImportResult): Group[] {
+  if (record.upcomingVisits.length === 0) return [];
+  const events = record.upcomingVisits.map((visit, i) =>
+    makeEvent(`up-${i}`, visit.date, visit.type, visit.provider, DOT.upcoming),
+  );
+  const sorted = [...events].sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0));
+  return [{ label: 'Upcoming', events: sorted }];
+}
+
 export function ChartTimeline({ record }: { record: EpicImportResult }) {
-  const groups = groupEvents(buildEvents(record));
+  const groups = [...buildUpcomingGroup(record), ...groupEvents(buildEvents(record))];
   if (groups.length === 0) return null;
 
   return (

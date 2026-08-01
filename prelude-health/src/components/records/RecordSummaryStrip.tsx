@@ -3,11 +3,12 @@
 import type { EpicImportResult } from '@/data/epic-mock';
 
 const STATS = [
+  { label: 'Test Results', dotClass: 'bg-emerald-500', count: (r: EpicImportResult) => r.labResults.length },
   { label: 'Medications', dotClass: 'bg-blue-500', count: (r: EpicImportResult) => r.medications.length },
+  { label: 'Visits', dotClass: 'bg-brand', count: (r: EpicImportResult) => r.recentEncounters.length + r.upcomingVisits.length },
+  { label: 'Immunizations', dotClass: 'bg-violet-500', count: (r: EpicImportResult) => r.immunizations.length },
   { label: 'Allergies', dotClass: 'bg-red-500', count: (r: EpicImportResult) => r.allergies.length },
-  { label: 'Conditions', dotClass: 'bg-amber-500', count: (r: EpicImportResult) => r.conditions.length },
-  { label: 'Labs', dotClass: 'bg-emerald-500', count: (r: EpicImportResult) => r.labResults.length },
-  { label: 'Visits', dotClass: 'bg-brand', count: (r: EpicImportResult) => r.recentEncounters.length },
+  { label: 'Health Issues', dotClass: 'bg-amber-500', count: (r: EpicImportResult) => r.conditions.length },
 ] as const;
 
 export function RecordSummaryStrip({ record }: { record: EpicImportResult }) {

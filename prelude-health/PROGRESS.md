@@ -192,3 +192,8 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   Stedi mock payers ready for all 4 when key lands. Appointment type = select + "Other —
   describe it" free-text (datalist UX was broken). Reddit communities: official logo,
   "via Reddit" badge, expanded warning block (peer-not-medical-advice, privacy, 911/988).
+- [3:3x] [full-scope] Urgency slider on intake (30 sec demo / 1 / 3 / 5 min) drives real
+  agent pacing on both engines + shorter replies globally. MyChart import personalizes to
+  the entered patient name (Maya Patel only via records-page sample data). Record shape
+  aligned to real MyChart: Test Results / Visits (with Upcoming) / Immunizations / Health
+  Issues; timeline + summary strip + history docs updated. Browser-verified end to end.

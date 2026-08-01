@@ -11,6 +11,7 @@ type Step = 'select' | 'connecting' | 'success';
 
 type Props = {
   onClose: () => void;
+  patientName?: string;
 };
 
 const CONNECT_DELAY_MS = 2000;
@@ -23,7 +24,7 @@ function CloseIcon() {
   );
 }
 
-export function ConnectHealthRecordsModal({ onClose }: Props) {
+export function ConnectHealthRecordsModal({ onClose, patientName }: Props) {
   const [step, setStep] = useState<Step>('select');
   const [system, setSystem] = useState<EpicSystem | null>(null);
   const [search, setSearch] = useState('');
@@ -92,14 +93,14 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
     // rAF so the bar mounts at 0% before the width transition kicks in.
     const raf = requestAnimationFrame(() => setIsProgressStarted(true));
     const timer = setTimeout(() => {
-      saveEpicImport(system.id, system.name);
+      saveEpicImport(system.id, system.name, patientName);
       setStep('success');
     }, CONNECT_DELAY_MS);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(timer);
     };
-  }, [step, system]);
+  }, [step, system, patientName]);
 
   const handleSelect = (selected: EpicSystem) => {
     if (step !== 'select') return;
@@ -268,7 +269,8 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
                 {EPIC_FHIR_MOCK.allergies.length} allerg
                 {EPIC_FHIR_MOCK.allergies.length === 1 ? 'y' : 'ies'} &middot;{' '}
                 {EPIC_FHIR_MOCK.conditions.length} conditions &middot;{' '}
-                {EPIC_FHIR_MOCK.labResults.length} lab results &middot;{' '}
+                {EPIC_FHIR_MOCK.labResults.length} test results &middot;{' '}
+                {EPIC_FHIR_MOCK.immunizations.length} immunizations &middot;{' '}
                 {EPIC_FHIR_MOCK.recentEncounters.length} recent visits
               </p>
             </div>

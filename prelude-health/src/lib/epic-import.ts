@@ -44,19 +44,32 @@ export function getEpicImport(): EpicImportState | null {
     ) {
       return null;
     }
-    return parsed as EpicImportState;
+    const state = parsed as EpicImportState;
+    // Records saved before immunizations/upcomingVisits existed lack those arrays.
+    return {
+      ...state,
+      record: {
+        ...state.record,
+        immunizations: Array.isArray(state.record.immunizations) ? state.record.immunizations : [],
+        upcomingVisits: Array.isArray(state.record.upcomingVisits) ? state.record.upcomingVisits : [],
+      },
+    };
   } catch {
     return null;
   }
 }
 
-export function saveEpicImport(systemId: string, systemName: string): EpicImportState {
+export function saveEpicImport(systemId: string, systemName: string, patientName?: string): EpicImportState {
+  const name = patientName ? sanitizeField(patientName) : '';
+  const record: EpicImportResult = name
+    ? { ...EPIC_FHIR_MOCK, patient: { ...EPIC_FHIR_MOCK.patient, name } }
+    : EPIC_FHIR_MOCK;
   const state: EpicImportState = {
     connected: true,
     systemId,
     systemName,
     importedAt: new Date().toISOString(),
-    record: EPIC_FHIR_MOCK,
+    record,
   };
   if (typeof window !== 'undefined') {
     localStorage.setItem(EPIC_IMPORT_KEY, JSON.stringify(state));
@@ -124,6 +137,13 @@ export function getImportedHistoryDocs(): { text: string }[] | null {
           .map((l) => `${sanitizeField(l.name)} ${sanitizeField(l.value)} on ${sanitizeField(l.date)} (${sanitizeField(l.flag)})`)
           .join('; ')}.`,
       },
+      ...(record.immunizations.length > 0
+        ? [{
+            text: `${name} — Immunizations: ${record.immunizations
+              .map((imm) => `${sanitizeField(imm.name)} (${sanitizeField(imm.date)})`)
+              .join('; ')}.`,
+          }]
+        : []),
       ...record.recentEncounters.map((e) => ({
         text: `${name} — Visit ${sanitizeField(e.date)}: ${sanitizeField(e.type)} with ${sanitizeField(e.provider)} at ${sanitizeField(e.facility)}.`,
       })),

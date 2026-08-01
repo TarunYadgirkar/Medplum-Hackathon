@@ -13,6 +13,13 @@ import { getImportedHistoryDocs, getEpicImport, RECORDS_CHANGED_EVENT } from '@/
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const OTHER_APPOINTMENT = '__other__';
+
+const CALL_LENGTHS = [
+  { seconds: 30, label: '30 sec (demo)' },
+  { seconds: 60, label: '1 min' },
+  { seconds: 180, label: '3 min' },
+  { seconds: 300, label: '5 min' },
+];
 const STEPS = ['Form', 'Consent', 'Check-in', 'Done'];
 const STEP_INDEX: Record<Step, number> = { form: 0, consent: 1, calling: 2, complete: 3 };
 
@@ -78,6 +85,7 @@ export default function IntakePage() {
   const [appointmentType, setAppointmentType] = useState('Sick visit');
   const [isCustomAppointment, setIsCustomAppointment] = useState(false);
   const [payerKey, setPayerKey] = useState('UHC');
+  const [callLengthIdx, setCallLengthIdx] = useState(2);
   const [ageRange, setAgeRange] = useState('');
   const [consented, setConsented] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -146,14 +154,14 @@ export default function IntakePage() {
         setDemoMode(true);
       } else {
         const engine = cfg.provider === 'grok' ? grok : deepgram;
-        await engine.start({ patientId: data.patientId, patientName: name, appointmentType });
+        await engine.start({ patientId: data.patientId, patientName: name, appointmentType, callSeconds: CALL_LENGTHS[callLengthIdx].seconds });
       }
     } catch {
       alert('Failed to start check-in. Try again.');
     } finally {
       setLoading(false);
     }
-  }, [name, appointmentType, ageRange, payerKey, grok, deepgram]);
+  }, [name, appointmentType, ageRange, payerKey, callLengthIdx, grok, deepgram, goToStep]);
 
   const finishCall = useCallback(async (transcriptText?: string) => {
     if (!session) return;
@@ -273,6 +281,22 @@ export default function IntakePage() {
                       <p className="mt-1 text-xs text-faint">Used when you ask Prelude what your visit will cost.</p>
                     </div>
                     <div>
+                      <label htmlFor="urgency-slider" className="block text-sm font-semibold text-ink mb-1.5">
+                        Urgency <span className="text-faint font-normal">· call length: {CALL_LENGTHS[callLengthIdx].label}</span>
+                      </label>
+                      <input id="urgency-slider" type="range" min={0} max={3} step={1} value={callLengthIdx}
+                        onChange={(e) => setCallLengthIdx(Number(e.target.value))}
+                        className="w-full accent-brand" />
+                      <div className="flex justify-between text-[11px] text-faint mt-1">
+                        {CALL_LENGTHS.map((c, i) => (
+                          <button key={c.seconds} type="button" onClick={() => setCallLengthIdx(i)}
+                            className={`transition-colors ${i === callLengthIdx ? 'text-brand font-semibold' : 'hover:text-body'}`}>
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-sm font-semibold text-ink mb-1.5">Age range <span className="text-faint font-normal">(optional)</span></label>
                       <select value={ageRange} onChange={(e) => setAgeRange(e.target.value)}
                         className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
@@ -292,7 +316,7 @@ export default function IntakePage() {
                           : 'Import your record so Prelude already knows your meds and allergies.'}
                       </p>
                     </div>
-                    <ConnectHealthRecordsButton />
+                    <ConnectHealthRecordsButton patientName={name.trim() || undefined} />
                   </div>
                   <Btn onClick={() => goToStep('consent')} disabled={!name.trim() || (isCustomAppointment && !appointmentType.trim())} className="w-full px-6 py-3.5">
                     Continue →
