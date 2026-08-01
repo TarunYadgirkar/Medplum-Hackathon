@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Nav, StatusChip, RiskBadge } from '@/components/primitives';
+import { Nav, Btn, Icon, StatusChip, RiskBadge, MicroLabel } from '@/components/primitives';
 import type { NoteStatus, RiskLevel } from '@/types';
 
 interface PatientRow {
@@ -18,57 +17,60 @@ interface PatientRow {
   created_at: string;
 }
 
-function IconUsers() {
+/* ── appointment_type → Material Symbol ──
+   Keyword match so any free-text appointment type from intake still gets a
+   sensible glyph, with the mockup's five archetypes matched exactly. */
+function appointmentIcon(type: string): string {
+  const t = (type || '').toLowerCase();
+  if (t.includes('urgent') || t.includes('emergency')) return 'emergency';
+  if (t.includes('telehealth') || t.includes('video') || t.includes('virtual')) return 'videocam';
+  if (t.includes('follow')) return 'event_repeat';
+  if (t.includes('new patient') || t.includes('new visit')) return 'person_add';
+  if (t.includes('annual') || t.includes('physical') || t.includes('wellness') || t.includes('checkup') || t.includes('check-up')) return 'monitor_heart';
+  if (t.includes('mental') || t.includes('psych') || t.includes('therapy') || t.includes('counsel')) return 'psychology';
+  if (t.includes('lab') || t.includes('test')) return 'biotech';
+  if (t.includes('vaccin') || t.includes('immuniz')) return 'vaccines';
+  if (t.includes('pediatric') || t.includes('child')) return 'child_care';
+  if (t.includes('sick') || t.includes('illness')) return 'sick';
+  return 'stethoscope';
+}
+
+/* ── row tint, keyed off note_status → risk_level → call_status ── */
+function rowTone(patient: PatientRow): { color: string; pulse?: boolean } {
+  if (patient.risk_level === 'high' || patient.note_status === 'urgent_review') return { color: 'text-danger' };
+  if (patient.note_status === 'ai_draft') return { color: 'text-brand' };
+  if (patient.note_status === 'reviewed') return { color: 'text-positive' };
+  if (patient.call_status === 'completed') return { color: 'text-faint', pulse: true }; // note still generating
+  return { color: 'text-faint' }; // awaiting call
+}
+
+const STATUS_ICON: Record<string, string> = {
+  urgent_review: 'priority_high',
+  ai_draft: 'smart_toy',
+  reviewed: 'verified',
+};
+
+function FallbackChip({ icon, label, spin }: { icon: string; label: string; spin?: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
+    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.14em] px-2.5 py-1 border border-line text-faint">
+      <Icon name={icon} className={`text-[13px] ${spin ? 'animate-spin' : ''}`} />
+      {label}
+    </span>
   );
 }
 
-function IconClock() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
+type StatTone = { icon: string; iconColor: string; labelColor: string; valueColor: string; accent?: string };
 
-function IconAlertTriangle() {
+function StatTile({ label, value, tone }: { label: string; value: number; tone: StatTone }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  );
-}
-
-type StatCardProps = { label: string; value: number; color: string; icon: React.ReactNode; iconColor: string };
-
-function StatCard({ label, value, color, icon, iconColor }: StatCardProps) {
-  return (
-    <div className="bg-white rounded-2xl border border-line shadow-sm p-5 flex items-start justify-between">
+    <div className={`bg-panel p-5 flex items-center gap-4 transition-colors hover:bg-bright ${tone.accent ? `border-t-4 ${tone.accent}` : ''}`}>
+      <Icon name={tone.icon} className={`text-[32px] shrink-0 ${tone.iconColor}`} />
       <div>
-        <p className="text-body text-xs font-semibold uppercase tracking-widest mb-2">{label}</p>
-        <p className={`text-3xl font-bold tabular-nums ${color}`}>{value}</p>
-      </div>
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconColor}`}>
-        {icon}
+        <p className={`text-[9.5px] font-semibold uppercase tracking-[.2em] ${tone.labelColor}`}>{label}</p>
+        <p className={`font-numeral text-[40px] sm:text-[44px] leading-none mt-1.5 ${tone.valueColor}`}>{value}</p>
       </div>
     </div>
   );
-}
-
-function RiskDot({ level }: { level?: string }) {
-  const colors: Record<string, string> = {
-    high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-emerald-500', none: 'bg-slate-300',
-  };
-  return <span className={`inline-block w-2 h-2 rounded-full ${colors[level ?? 'none'] ?? colors.none}`} />;
 }
 
 export default function DashboardPage() {
@@ -99,45 +101,64 @@ export default function DashboardPage() {
         right={
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-body font-medium">Live</span>
+              <span className="w-1.5 h-1.5 bg-positive animate-pulse" />
+              <span className="text-[9.5px] font-semibold uppercase tracking-[.18em] text-body">Live</span>
             </div>
-            <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center text-brand font-bold text-sm">
-              D
+            <div className="flex items-center gap-2.5">
+              <span className="w-7 h-7 bg-ink text-bright flex items-center justify-center">
+                <Icon name="stethoscope" className="text-[16px]" />
+              </span>
+              <span className="text-sm font-bold text-ink">Dr. Chen</span>
             </div>
-            <span className="text-sm font-semibold text-ink">Dr. Chen</span>
           </div>
         }
       />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8 space-y-6">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8 sm:py-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         >
           {/* ── Header ── */}
-          <div className="flex items-center justify-between mb-7">
+          <div className="flex items-end justify-between gap-6 flex-wrap mb-7">
             <div>
-              <h1 className="text-2xl font-bold text-ink">Patient Intake Queue</h1>
-              <p className="text-body text-sm mt-1">AI-generated summaries require provider review before clinical use.</p>
+              <div className="flex items-center gap-2.5">
+                <Icon name="groups" className="text-[19px] text-danger" />
+                <span className="text-[9.5px] font-semibold uppercase tracking-[.22em] text-faint">Auto-refreshes every 5s</span>
+              </div>
+              <h1 className="mt-3 font-extrabold text-[38px] sm:text-[46px] leading-[0.96] tracking-[-.03em] text-ink">
+                Patient intake queue
+              </h1>
+              <p className="mt-2.5 max-w-xl text-sm text-body">
+                AI-generated summaries require provider review before clinical use.
+              </p>
             </div>
-            <Link
-              href="/intake"
-              className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              New Intake
+            <Link href="/intake">
+              <Btn className="px-6 py-3.5 inline-flex items-center gap-2">
+                <Icon name="add" className="text-[20px]" />
+                New intake
+              </Btn>
             </Link>
           </div>
 
           {/* ── Stats ── */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <StatCard label="Total Patients" value={patients.length} color="text-ink" icon={<IconUsers />}         iconColor="bg-slate-100 text-slate-500" />
-            <StatCard label="Pending Review"  value={pending.length}  color="text-amber-600"  icon={<IconClock />}          iconColor="bg-amber-50 text-amber-500" />
-            <StatCard label="High Risk"       value={highRisk.length} color="text-red-600"    icon={<IconAlertTriangle />}  iconColor="bg-red-50 text-red-500" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-line border border-line mb-6">
+            <StatTile
+              label="Patients"
+              value={patients.length}
+              tone={{ icon: 'groups', iconColor: 'text-brand', labelColor: 'text-faint', valueColor: 'text-ink' }}
+            />
+            <StatTile
+              label="Pending review"
+              value={pending.length}
+              tone={{ icon: 'pending_actions', iconColor: 'text-caution', labelColor: 'text-caution', valueColor: 'text-caution', accent: 'border-caution' }}
+            />
+            <StatTile
+              label="High risk"
+              value={highRisk.length}
+              tone={{ icon: 'warning', iconColor: 'text-danger', labelColor: 'text-danger', valueColor: 'text-danger', accent: 'border-danger' }}
+            />
           </div>
 
           {/* ── Urgent banner ── */}
@@ -145,53 +166,56 @@ export default function DashboardPage() {
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 mb-6"
+              className="bg-danger flex items-center gap-3.5 px-5 py-3.5 mb-6"
             >
-              <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
-                <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-              </div>
-              <span className="text-red-700 font-semibold text-sm">
+              <Icon name="emergency" className="text-[22px] text-bright animate-pulse shrink-0" />
+              <span className="text-bright font-bold text-sm">
                 {urgent.length} patient{urgent.length > 1 ? 's' : ''} flagged for urgent provider review
               </span>
             </motion.div>
           )}
 
           {/* ── Table ── */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden">
-            <div className="hidden sm:grid sm:grid-cols-[1.8fr_1.8fr_1fr_1fr_auto_auto] gap-4 px-6 py-3.5 border-b border-line bg-surface">
-              {['Patient', 'Appointment', 'Status', 'Risk', 'Action', ''].map((h) => (
-                <span key={h} className="text-[11px] font-bold text-faint uppercase tracking-widest">{h}</span>
+          <div className="bg-panel border border-line">
+            <div className="hidden sm:grid sm:grid-cols-[40px_1.8fr_1.6fr_1.1fr_.7fr_84px] gap-4 px-6 py-3 border-b border-line bg-line/20">
+              {['', 'Patient', 'Appointment', 'Status', 'Risk', ''].map((h, idx) => (
+                <MicroLabel key={idx}>{h}</MicroLabel>
               ))}
             </div>
 
             {loading && (
               <div className="px-6 py-16 text-center">
-                <div className="w-8 h-8 border-2 border-brand/30 border-t-brand rounded animate-spin mx-auto mb-3" />
+                <Icon name="progress_activity" className="text-[28px] text-brand animate-spin inline-block mb-3" />
                 <p className="text-body text-sm">Loading patients…</p>
               </div>
             )}
 
             {!loading && patients.length === 0 && (
               <div className="px-6 py-16 text-center space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                  </svg>
-                </div>
+                <span className="w-10 h-10 bg-ink/5 flex items-center justify-center mx-auto text-faint">
+                  <Icon name="inbox" className="text-[20px]" />
+                </span>
                 <p className="text-body font-medium">No patients yet.</p>
-                <Link href="/intake" className="text-brand hover:text-brand-dark font-semibold text-sm transition-colors">
-                  Start an intake →
+                <Link href="/intake" className="inline-flex items-center gap-1.5 text-brand hover:text-brand-dark font-semibold text-sm transition-colors">
+                  Start an intake
+                  <Icon name="arrow_forward" className="text-[15px]" />
                 </Link>
               </div>
             )}
 
             {patients.map((patient, i) => {
+              const tone = rowTone(patient);
+              const icon = appointmentIcon(patient.appointment_type);
+
               const statusBadge = patient.note_status ? (
-                <StatusChip status={patient.note_status as NoteStatus} />
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name={STATUS_ICON[patient.note_status] ?? 'help'} className={`text-[13px] ${tone.color}`} />
+                  <StatusChip status={patient.note_status as NoteStatus} />
+                </span>
               ) : patient.call_status === 'completed' ? (
-                <span className="text-xs font-medium px-2.5 py-1 rounded bg-slate-100 text-slate-500">Processing…</span>
+                <FallbackChip icon="autorenew" label="Processing" spin />
               ) : (
-                <span className="text-xs font-medium px-2.5 py-1 rounded bg-slate-100 text-slate-400">Pending</span>
+                <FallbackChip icon="schedule" label="Pending" />
               );
 
               const riskBadge = patient.note_id ? (
@@ -200,15 +224,18 @@ export default function DashboardPage() {
                 <span className="text-faint text-sm">—</span>
               );
 
-              const noteLink = patient.note_id ? (
+              const viewButton = patient.note_id ? (
                 <Link
                   href={`/dashboard/${patient.note_id}`}
-                  className="text-sm text-brand hover:text-brand-dark font-semibold transition-colors whitespace-nowrap"
+                  className="w-9 h-9 flex items-center justify-center bg-ink text-bright transition-all duration-200 hover:[background:var(--grad-hover)]"
+                  title="View note"
                 >
-                  View Note →
+                  <Icon name="visibility" className="text-[18px]" />
                 </Link>
               ) : (
-                <span className="text-sm text-faint">—</span>
+                <span className="w-9 h-9 flex items-center justify-center bg-ink/10 text-ink/25" title="Note not ready">
+                  <Icon name="visibility_off" className="text-[18px]" />
+                </span>
               );
 
               const deleteButton = (
@@ -218,19 +245,15 @@ export default function DashboardPage() {
                     await fetch(`/api/patients/${patient.id}`, { method: 'DELETE' });
                     void fetchPatients();
                   }}
-                  className="p-2 rounded-lg text-[#CBD5E1] hover:text-red-400 hover:bg-red-50 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
+                  className="w-9 h-9 flex items-center justify-center border border-line text-faint transition-all duration-200 hover:bg-danger hover:text-bright hover:border-danger"
                   title="Remove patient"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    <path d="M10 11v6M14 11v6" />
-                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                  </svg>
+                  <Icon name="delete" className="text-[18px]" />
                 </button>
               );
 
-              const formattedDate = new Date(patient.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              const date = new Date(patient.created_at);
+              const formattedDate = `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
 
               return (
                 <motion.div
@@ -238,44 +261,49 @@ export default function DashboardPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.04 }}
-                  className={`px-6 py-4 hover:bg-surface transition-colors group ${
+                  className={`px-6 py-4 transition-colors group ${
                     i < patients.length - 1 ? 'border-b border-line' : ''
-                  } ${patient.risk_level === 'high' ? 'bg-red-50/30' : ''}`}
+                  } ${patient.risk_level === 'high' ? 'border-l-4 border-l-danger bg-danger/5 hover:bg-danger/10' : 'hover:bg-bright'}`}
                 >
                   {/* Desktop row */}
-                  <div className="hidden sm:grid sm:grid-cols-[1.8fr_1.8fr_1fr_1fr_auto_auto] sm:gap-4 sm:items-center">
+                  <div className="hidden sm:grid sm:grid-cols-[40px_1.8fr_1.6fr_1.1fr_.7fr_84px] sm:gap-4 sm:items-center">
+                    <Icon name={icon} className={`text-[24px] ${tone.color} ${tone.pulse ? 'animate-pulse' : ''}`} />
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        {patient.risk_level === 'high' && <RiskDot level="high" />}
-                        <p className="font-semibold text-ink truncate">{patient.name}</p>
-                      </div>
-                      <p className="text-xs text-faint mt-0.5">{formattedDate}</p>
+                      <p className="font-extrabold text-ink truncate"><Link href={`/dashboard/patient/${patient.id}`} className="hover:text-brand transition-colors">{patient.name}</Link></p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[.14em] text-faint mt-1">{formattedDate}</p>
                     </div>
-                    <p className="text-sm text-body truncate">{patient.appointment_type}</p>
+                    <span className="flex items-center gap-2 text-sm text-body truncate">
+                      <Icon name={icon} className="text-[16px] text-faint shrink-0" />
+                      {patient.appointment_type}
+                    </span>
                     <div>{statusBadge}</div>
                     <div>{riskBadge}</div>
-                    <div>{noteLink}</div>
-                    <div>{deleteButton}</div>
+                    <div className="flex gap-1 justify-self-end">
+                      {viewButton}
+                      {deleteButton}
+                    </div>
                   </div>
 
                   {/* Mobile card */}
                   <div className="sm:hidden space-y-3">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          {patient.risk_level === 'high' && <RiskDot level="high" />}
-                          <p className="font-semibold text-ink truncate">{patient.name}</p>
+                      <div className="flex items-start gap-3 min-w-0">
+                        <Icon name={icon} className={`text-[22px] mt-0.5 ${tone.color} ${tone.pulse ? 'animate-pulse' : ''} shrink-0`} />
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-ink truncate"><Link href={`/dashboard/patient/${patient.id}`} className="hover:text-brand transition-colors">{patient.name}</Link></p>
+                          <p className="text-[10px] font-semibold uppercase tracking-[.14em] text-faint mt-1 truncate">
+                            {formattedDate} · {patient.appointment_type}
+                          </p>
                         </div>
-                        <p className="text-xs text-faint mt-0.5 truncate">{formattedDate} · {patient.appointment_type}</p>
                       </div>
                       {deleteButton}
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {statusBadge}
                         {riskBadge}
                       </div>
-                      {noteLink}
+                      {viewButton}
                     </div>
                   </div>
                 </motion.div>

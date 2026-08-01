@@ -197,3 +197,11 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   the entered patient name (Maya Patel only via records-page sample data). Record shape
   aligned to real MyChart: Test Results / Visits (with Upcoming) / Immunizations / Health
   Issues; timeline + summary strip + history docs updated. Browser-verified end to end.
+- [13:xx] [lane-4] DESIGN LANGUAGE IMPLEMENTED from the Claude Design handoff ("Prelude UI
+  Handoff.dc.html"): new tokens (ink/paper/panel/brand blue/danger/caution/positive, radius 0,
+  Archivo+Jost+Spline Mono+Material Symbols) in globals.css/layout/primitives, then all
+  screens restyled in parallel: landing (5a), intake wizard incl. dark voice stage (5b-5d),
+  dashboard queue (5e), note review (5f). NEW surfaces: CoverageBot guided Stedi slide-over
+  (6a-6b, mounted on landing + intake done + note page) and /dashboard/patient/[id] chart
+  with timeline + calendar + skeleton/empty states (6c-6e); ChartTimeline on /records
+  restyled to tokens. ALL logic/contracts untouched. build + smoke.sh green.

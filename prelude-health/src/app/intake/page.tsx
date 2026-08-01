@@ -1,13 +1,17 @@
 'use client';
 // Patient voice check-in — UI structure carried over from klarity-voicenote's
 // intake flow, voice engine swapped from Retell to the Deepgram Voice Agent.
+// Styled per the Claude Design handoff (§5b–5d, §5g): sharp corners, ink-on-paper
+// palette, segmented step header, icon-square input rows, dark voice stage.
+// Circles are reserved for the voice orb.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useGrokVoice } from '@/hooks/useGrokVoice';
-import { Nav, Btn } from '@/components/primitives';
+import { Nav, Btn, Icon } from '@/components/primitives';
+import CoverageBot from '@/components/coverage-bot/CoverageBot';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { getImportedHistoryDocs, getEpicImport, importMatchesPatient, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
 
@@ -20,7 +24,12 @@ const CALL_LENGTHS = [
   { seconds: 180, label: '3 min' },
   { seconds: 300, label: '5 min' },
 ];
-const STEPS = ['Form', 'Consent', 'Check-in', 'Done'];
+const STEPS = [
+  { label: 'Form', icon: 'edit_note' },
+  { label: 'Consent', icon: 'verified_user' },
+  { label: 'Check-in', icon: 'mic' },
+  { label: 'Done', icon: 'task_alt' },
+];
 const STEP_INDEX: Record<Step, number> = { form: 0, consent: 1, calling: 2, complete: 3 };
 
 const fadeUp = {
@@ -42,39 +51,53 @@ Agent: Your UnitedHealthcare plan shows active coverage. A telehealth visit woul
 Patient: Perfect, that's all I needed.
 Agent: Great. I've charted everything for your provider to review before your visit. Feel better soon!`;
 
-function Visualizer({ state }: { state: string }) {
-  const barHeights = ['h-5', 'h-9', 'h-14', 'h-20', 'h-14', 'h-9', 'h-5'];
-  if (state === 'ended') {
-    return (
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <p className="text-body text-sm">Charting your visit…</p>
-      </div>
-    );
-  }
-  if (state === 'connecting') {
-    return (
-      <div className="flex flex-col items-center gap-4">
-        <div className="animate-pulse w-16 h-16 bg-brand/15 rounded-full flex items-center justify-center">
-          <div className="w-8 h-8 bg-brand/30 rounded-full" />
-        </div>
-        <p className="text-body text-sm">Connecting — allow microphone access…</p>
-      </div>
-    );
-  }
-  const isAgent = state === 'agent_speaking';
+/* Micro field label (design-system recipe) */
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <span className="block text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">{children}</span>;
+}
+
+/* Dark voice stage — hero call presence. The orb is the one place circles are allowed. */
+function VoiceStage({ state }: { state: string }) {
+  const status =
+    state === 'ended'
+      ? { icon: 'hub', text: 'Charting your visit…' }
+      : state === 'connecting'
+        ? { icon: 'mic', text: 'Connecting — allow microphone access…' }
+        : state === 'agent_speaking'
+          ? { icon: 'volume_up', text: 'Prelude is speaking' }
+          : { icon: 'hearing', text: 'Listening — speak when ready' };
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="flex items-end gap-[6px] h-20 px-2">
-        {barHeights.map((h, i) => (
-          <div key={i} className={`w-[6px] rounded-full ${isAgent ? 'bg-brand-accent animate-pulse' : 'bg-brand'} ${h} transition-colors duration-500`} />
-        ))}
-      </div>
-      <p className="text-body text-sm">{isAgent ? 'Prelude is speaking…' : 'Listening — speak when ready'}</p>
+    <div className="relative h-72 bg-ink overflow-hidden flex items-center justify-center">
+      {/* ambient glows */}
+      <div className="absolute w-72 h-72 -left-10 -top-16 rounded-full bg-caution/25 blur-3xl" aria-hidden />
+      <div className="absolute w-64 h-64 -right-12 -bottom-16 rounded-full bg-danger/25 blur-3xl" aria-hidden />
+      {/* corner ticks */}
+      {(['left-2.5 top-2.5', 'right-2.5 top-2.5', 'left-2.5 bottom-2.5', 'right-2.5 bottom-2.5'] as const).map((pos) => (
+        <span key={pos} className={`absolute ${pos}`} aria-hidden>
+          <span className={`absolute w-4 h-px bg-bright/50 ${pos.includes('right') ? 'right-0' : 'left-0'} ${pos.includes('bottom') ? 'bottom-0' : 'top-0'}`} />
+          <span className={`absolute w-px h-4 bg-bright/50 ${pos.includes('right') ? 'right-0' : 'left-0'} ${pos.includes('bottom') ? 'bottom-0' : 'top-0'}`} />
+        </span>
+      ))}
+
+      {state === 'ended' ? (
+        <div className="w-16 h-16 bg-positive flex items-center justify-center">
+          <Icon name="check" className="text-[34px] text-bright" />
+        </div>
+      ) : (
+        <div className="relative w-40 h-40">
+          <div className="absolute -inset-8 rounded-full bg-brand-accent/25 blur-2xl animate-breathe" aria-hidden />
+          <div className={`relative w-40 h-40 rounded-full bg-bright overflow-hidden shadow-[0_0_0_1px_var(--color-line),0_24px_60px_rgba(0,0,0,.4)] ${state === 'connecting' ? 'animate-breathe' : ''}`}>
+            <div className="absolute w-28 h-28 -left-4 -top-2 rounded-full bg-brand/80 blur-xl" aria-hidden />
+            <div className="absolute w-24 h-24 right-0 top-9 rounded-full bg-danger/70 blur-xl" aria-hidden />
+            <div className="absolute w-24 h-24 left-4 -bottom-2 rounded-full bg-caution/80 blur-xl" aria-hidden />
+          </div>
+        </div>
+      )}
+
+      <span className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 text-[9.5px] font-bold uppercase tracking-[.2em] text-bright/80">
+        <Icon name={status.icon} className="text-[16px]" />
+        {status.text}
+      </span>
     </div>
   );
 }
@@ -136,6 +159,13 @@ export default function IntakePage() {
   const { state: voiceState, transcript, coverage, error, stop } = voice;
   stopRef.current = stop;
 
+  // Live transcript auto-scrolls to the newest utterance.
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = transcriptRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [transcript.length]);
+
   const beginCheckIn = useCallback(async () => {
     setLoading(true);
     try {
@@ -190,290 +220,434 @@ export default function IntakePage() {
       setFinishing(false);
       goToStep('complete');
     }
-  }, [session, stop, name, payerKey]);
+  }, [session, stop, name, payerKey, goToStep]);
 
   const stepIdx = STEP_INDEX[step];
 
+  const selectCls = 'mt-1 w-full appearance-none bg-transparent text-[15px] text-ink pr-7 focus:outline-none cursor-pointer';
+  const chev = <Icon name="expand_more" className="text-[20px] text-faint absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />;
+
   return (
     <div className="min-h-dvh bg-surface flex flex-col">
-      <Nav right={<span className="text-sm text-body font-medium">Voice Check-in</span>} />
+      <Nav right={
+        <span className="flex items-center gap-2 text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">
+          <Icon name="person" className="text-[16px]" />Voice check-in
+        </span>
+      } />
 
-      {/* Progress */}
-      <div className="bg-white border-b border-line px-6 py-4">
-        <div className="max-w-lg mx-auto flex items-center">
-          {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center flex-1 last:flex-none">
-              <div className="flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                  i < stepIdx ? 'bg-brand text-white' : i === stepIdx ? 'bg-brand text-white ring-4 ring-brand/20' : 'bg-line text-faint'
-                }`}>
-                  {i < stepIdx ? '✓' : i + 1}
+      <main className="flex-1 px-6 py-10 flex justify-center">
+        <div className="w-full max-w-2xl">
+
+          {/* Segmented step header */}
+          <div className="flex border border-line bg-panel">
+            {STEPS.map((s, i) => {
+              const active = i === stepIdx;
+              const done = i < stepIdx;
+              return (
+                <div key={s.label}
+                  className={`flex-1 flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-3 transition-colors duration-300 ${i > 0 ? 'border-l border-line' : ''} ${
+                    active ? 'bg-ink text-bright' : done ? 'text-ink' : 'text-faint'
+                  }`}>
+                  <Icon name={done ? 'check' : s.icon} className={`text-[18px] ${done ? 'text-positive' : ''}`} />
+                  <span className="text-[11px] font-bold">{s.label}</span>
                 </div>
-                <span className={`text-[11px] font-medium mt-1 ${i === stepIdx ? 'text-brand' : 'text-faint'}`}>{s}</span>
-              </div>
-              {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-[2px] mx-2 mb-4 rounded transition-colors duration-500 ${i < stepIdx ? 'bg-brand' : 'bg-line'}`} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+              );
+            })}
+          </div>
 
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <AnimatePresence mode="wait">
-          <motion.div key={step} {...fadeUp} className="w-full max-w-lg">
+          <AnimatePresence mode="wait">
+            <motion.div key={step} {...fadeUp} className="-mt-px">
 
-            {step === 'form' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-line overflow-hidden">
-                <div className="bg-gradient-to-br from-brand/5 to-brand-accent/5 px-8 pt-8 pb-6 border-b border-line">
-                  <h1 className="text-2xl font-bold text-ink">Check in before your visit</h1>
-                  <p className="mt-1.5 text-body text-sm leading-relaxed">
+              {step === 'form' && (
+                <div className="border border-line bg-panel p-6 sm:p-8">
+                  <h1 className="text-3xl font-extrabold text-ink tracking-tight">Check in before your visit</h1>
+                  <p className="mt-2.5 text-sm text-body leading-relaxed">
                     Talk to Prelude for ~3 minutes. Your conversation is charted for your doctor as it happens — and you can ask what your visit will cost.
                   </p>
-                </div>
-                <div className="px-8 py-6 space-y-5">
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 flex gap-3">
-                    <span className="shrink-0 text-amber-500 text-base mt-0.5">⚠</span>
-                    <p><strong className="text-amber-900">Not a doctor.</strong> Prelude collects information only — no diagnosis, no treatment. In an emergency call <strong>911</strong> (or <strong>988</strong> for mental health crisis).</p>
+
+                  <div className="mt-5 flex items-center gap-3.5 bg-danger/10 border-l-4 border-danger px-4 py-3">
+                    <Icon name="emergency" className="text-[22px] text-danger shrink-0" />
+                    <p className="text-sm text-ink leading-relaxed"><strong className="text-danger">Not a doctor.</strong> Prelude collects information only — no diagnosis, no treatment. In an emergency call <strong>911</strong> (or <strong>988</strong> for mental health crisis).</p>
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-ink mb-1.5">Your name</label>
-                      <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name as it appears in your records"
-                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink placeholder-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-ink mb-1.5">Appointment type</label>
-                      <select value={isCustomAppointment ? OTHER_APPOINTMENT : appointmentType}
-                        onChange={(e) => {
-                          if (e.target.value === OTHER_APPOINTMENT) {
-                            setIsCustomAppointment(true);
-                            setAppointmentType('');
-                          } else {
-                            setIsCustomAppointment(false);
-                            setAppointmentType(e.target.value);
-                          }
-                        }}
-                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
-                        <option>Sick visit</option>
-                        <option>New patient visit</option>
-                        <option>Annual physical</option>
-                        <option>Follow-up</option>
-                        <option>Telehealth consult</option>
-                        <option value={OTHER_APPOINTMENT}>Other — describe it…</option>
-                      </select>
-                      {isCustomAppointment && (
-                        <input type="text" value={appointmentType} autoFocus
-                          onChange={(e) => setAppointmentType(e.target.value)}
-                          placeholder="e.g. knee pain consult, medication review…"
-                          maxLength={100}
-                          className="mt-2 w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink placeholder-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all" />
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-ink mb-1.5">Insurance</label>
-                      <select value={payerKey} onChange={(e) => setPayerKey(e.target.value)}
-                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
-                        <option value="UHC">UnitedHealthcare</option>
-                        <option value="CIGNA">Cigna</option>
-                        <option value="AETNA">Aetna</option>
-                        <option value="CMS">Medicare</option>
-                        <option value="NONE">Self-pay / not sure</option>
-                      </select>
-                      <p className="mt-1 text-xs text-faint">Used when you ask Prelude what your visit will cost.</p>
-                    </div>
-                    <div>
-                      <label htmlFor="urgency-slider" className="block text-sm font-semibold text-ink mb-1.5">
-                        Urgency <span className="text-faint font-normal">· call length: {CALL_LENGTHS[callLengthIdx].label}</span>
+
+                  <div className="mt-6 space-y-3.5">
+                    {/* Name */}
+                    <div className="flex border border-ink bg-bright transition-shadow duration-200 focus-within:shadow-[0_6px_0_var(--color-line)]">
+                      <span className="w-[52px] flex-none flex items-center justify-center bg-ink text-bright">
+                        <Icon name="badge" className="text-[21px]" />
+                      </span>
+                      <label className="flex-1 px-4 py-2.5 cursor-text">
+                        <FieldLabel>Your name</FieldLabel>
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name as it appears in your records"
+                          className="mt-1 w-full bg-transparent text-[15px] text-ink placeholder-faint focus:outline-none" />
                       </label>
-                      <input id="urgency-slider" type="range" min={0} max={3} step={1} value={callLengthIdx}
-                        onChange={(e) => setCallLengthIdx(Number(e.target.value))}
-                        className="w-full accent-brand" />
-                      <div className="flex justify-between text-[11px] text-faint mt-1">
-                        {CALL_LENGTHS.map((c, i) => (
-                          <button key={c.seconds} type="button" onClick={() => setCallLengthIdx(i)}
-                            className={`transition-colors ${i === callLengthIdx ? 'text-brand font-semibold' : 'hover:text-body'}`}>
-                            {c.label}
-                          </button>
-                        ))}
+                    </div>
+
+                    {/* Appointment type + age range */}
+                    <div className="grid sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <div className="flex border border-line bg-bright transition-colors duration-200 hover:border-ink focus-within:border-ink">
+                          <span className="w-[52px] flex-none flex items-center justify-center bg-ink/5 text-ink">
+                            <Icon name="event_available" className="text-[21px]" />
+                          </span>
+                          <div className="relative flex-1 px-4 py-2.5">
+                            <FieldLabel>Appointment type</FieldLabel>
+                            <select value={isCustomAppointment ? OTHER_APPOINTMENT : appointmentType}
+                              onChange={(e) => {
+                                if (e.target.value === OTHER_APPOINTMENT) {
+                                  setIsCustomAppointment(true);
+                                  setAppointmentType('');
+                                } else {
+                                  setIsCustomAppointment(false);
+                                  setAppointmentType(e.target.value);
+                                }
+                              }}
+                              className={selectCls}>
+                              <option>Sick visit</option>
+                              <option>New patient visit</option>
+                              <option>Annual physical</option>
+                              <option>Follow-up</option>
+                              <option>Telehealth consult</option>
+                              <option value={OTHER_APPOINTMENT}>Other — describe it…</option>
+                            </select>
+                            {chev}
+                          </div>
+                        </div>
+                        {isCustomAppointment && (
+                          <div className="mt-2 flex border border-line bg-bright transition-colors duration-200 focus-within:border-ink">
+                            <span className="w-[52px] flex-none flex items-center justify-center bg-ink/5 text-ink">
+                              <Icon name="edit_note" className="text-[21px]" />
+                            </span>
+                            <label className="flex-1 px-4 py-2.5 cursor-text">
+                              <FieldLabel>Describe it</FieldLabel>
+                              <input type="text" value={appointmentType} autoFocus
+                                onChange={(e) => setAppointmentType(e.target.value)}
+                                placeholder="e.g. knee pain consult, medication review…"
+                                maxLength={100}
+                                className="mt-1 w-full bg-transparent text-[15px] text-ink placeholder-faint focus:outline-none" />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex self-start border border-line bg-bright transition-colors duration-200 hover:border-ink focus-within:border-ink">
+                        <span className="w-[52px] flex-none flex items-center justify-center bg-ink/5 text-ink">
+                          <Icon name="hourglass_empty" className="text-[21px]" />
+                        </span>
+                        <div className="relative flex-1 px-4 py-2.5">
+                          <FieldLabel>Age range · optional</FieldLabel>
+                          <select value={ageRange} onChange={(e) => setAgeRange(e.target.value)} className={selectCls}>
+                            <option value="">Prefer not to say</option>
+                            <option>18–24</option><option>25–34</option><option>35–44</option><option>45–54</option><option>55+</option>
+                          </select>
+                          {chev}
+                        </div>
                       </div>
                     </div>
+
+                    {/* Insurance */}
                     <div>
-                      <label className="block text-sm font-semibold text-ink mb-1.5">Age range <span className="text-faint font-normal">(optional)</span></label>
-                      <select value={ageRange} onChange={(e) => setAgeRange(e.target.value)}
-                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
-                        <option value="">Prefer not to say</option>
-                        <option>18–24</option><option>25–34</option><option>35–44</option><option>45–54</option><option>55+</option>
-                      </select>
+                      <div className="flex border border-line bg-bright transition-colors duration-200 hover:border-ink focus-within:border-ink">
+                        <span className="w-[52px] flex-none flex items-center justify-center bg-ink/5 text-ink">
+                          <Icon name="shield" className="text-[21px]" />
+                        </span>
+                        <div className="relative flex-1 px-4 py-2.5">
+                          <FieldLabel>Insurance</FieldLabel>
+                          <select value={payerKey} onChange={(e) => setPayerKey(e.target.value)} className={selectCls}>
+                            <option value="UHC">UnitedHealthcare</option>
+                            <option value="CIGNA">Cigna</option>
+                            <option value="AETNA">Aetna</option>
+                            <option value="CMS">Medicare</option>
+                            <option value="NONE">Self-pay / not sure</option>
+                          </select>
+                          {chev}
+                        </div>
+                      </div>
+                      <p className="mt-1.5 text-xs text-faint">Used when you ask Prelude what your visit will cost.</p>
+                    </div>
+
+                    {/* Urgency / call length */}
+                    <div className="flex border border-line bg-bright transition-colors duration-200 hover:border-ink focus-within:border-ink">
+                      <span className="w-[52px] flex-none flex items-center justify-center bg-ink/5 text-ink">
+                        <Icon name="timer" className="text-[21px]" />
+                      </span>
+                      <div className="flex-1 px-4 py-2.5">
+                        <label htmlFor="urgency-slider">
+                          <FieldLabel>Urgency · call length: {CALL_LENGTHS[callLengthIdx].label}</FieldLabel>
+                        </label>
+                        <input id="urgency-slider" type="range" min={0} max={3} step={1} value={callLengthIdx}
+                          onChange={(e) => setCallLengthIdx(Number(e.target.value))}
+                          className="mt-2 w-full accent-brand" />
+                        <div className="flex justify-between text-[11px] text-faint mt-1">
+                          {CALL_LENGTHS.map((c, i) => (
+                            <button key={c.seconds} type="button" onClick={() => setCallLengthIdx(i)}
+                              className={`transition-colors ${i === callLengthIdx ? 'text-brand font-semibold' : 'hover:text-body'}`}>
+                              {c.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* MyChart / health-records import */}
+                    <div className={`flex items-center gap-3.5 border px-4 py-3.5 transition-colors ${chartConnected ? 'border-brand/35 bg-brand/5' : 'border-line bg-bright'}`}>
+                      <Icon name="folder_shared" className={`text-[24px] shrink-0 ${chartConnected ? 'text-brand' : 'text-faint'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12.5px] font-bold text-ink">
+                          {chartConnected ? `Health records connected · ${getEpicImport()?.systemName ?? ''}` : 'Use MyChart?'}
+                        </p>
+                        <p className="text-xs text-body mt-0.5">
+                          {chartConnected
+                            ? 'Prelude has your meds, allergies and history — it won’t re-ask.'
+                            : 'Import your record so Prelude already knows your meds and allergies.'}
+                        </p>
+                      </div>
+                      {chartConnected && <Icon name="check_circle" className="text-[22px] text-positive shrink-0" />}
+                      <ConnectHealthRecordsButton patientName={name.trim() || undefined} />
                     </div>
                   </div>
-                  <div className={`rounded-2xl border p-4 flex items-center justify-between gap-3 transition-colors ${chartConnected ? 'bg-brand/5 border-brand/30' : 'bg-surface border-line'}`}>
-                    <div>
-                      <p className="text-sm font-semibold text-ink">
-                        {chartConnected ? `Health records connected · ${getEpicImport()?.systemName ?? ''}` : 'Use MyChart?'}
-                      </p>
-                      <p className="text-xs text-body mt-0.5">
-                        {chartConnected
-                          ? 'Prelude has your meds, allergies and history — it won’t re-ask.'
-                          : 'Import your record so Prelude already knows your meds and allergies.'}
-                      </p>
-                    </div>
-                    <ConnectHealthRecordsButton patientName={name.trim() || undefined} />
-                  </div>
-                  <Btn onClick={() => goToStep('consent')} disabled={!name.trim() || (isCustomAppointment && !appointmentType.trim())} className="w-full px-6 py-3.5">
-                    Continue →
+
+                  <Btn onClick={() => goToStep('consent')} disabled={!name.trim() || (isCustomAppointment && !appointmentType.trim())}
+                    className="mt-6 w-full px-6 py-4 flex items-center justify-center gap-2.5 text-[13px]">
+                    Continue<Icon name="arrow_forward" className="text-[20px]" />
                   </Btn>
                 </div>
-              </div>
-            )}
+              )}
 
-            {step === 'consent' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-line overflow-hidden">
-                <div className="bg-gradient-to-br from-blue-50 to-brand/5 px-8 pt-8 pb-6 border-b border-line">
-                  <h1 className="text-2xl font-bold text-ink">Before we begin</h1>
-                  <p className="mt-1.5 text-body text-sm">Please read and accept to continue.</p>
-                </div>
-                <div className="px-8 py-6 space-y-5">
-                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3 text-sm text-ink leading-relaxed">
+              {step === 'consent' && (
+                <div className="border border-line bg-panel p-6 sm:p-8">
+                  <div className="flex items-center gap-2.5">
+                    <Icon name="verified_user" className="text-[20px] text-danger" />
+                    <span className="text-[10px] font-bold uppercase tracking-[.22em] text-danger">Step 2 · consent</span>
+                  </div>
+                  <h1 className="mt-4 text-3xl font-extrabold text-ink tracking-tight">Before we begin</h1>
+                  <p className="mt-2 text-sm text-body">Please read and accept to continue.</p>
+
+                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-px bg-line border border-line">
                     {[
-                      { label: 'What this is', text: 'An AI voice assistant that collects check-in information and charts it for your licensed provider.' },
-                      { label: 'What this is not', text: 'Not medical advice, diagnosis, treatment, or crisis support.' },
-                      { label: 'Your responses', text: 'Transcribed, summarized, and stored in your clinic record (FHIR) for your provider to review before your visit.' },
-                      { label: 'Emergency', text: 'If you are in immediate danger, call 911 (or 988 for mental health crisis) now.' },
-                    ].map(({ label, text }) => (
-                      <div key={label} className="flex gap-2">
-                        <span className="shrink-0 text-brand font-bold mt-0.5">·</span>
-                        <p><strong className="text-ink">{label}:</strong> {text}</p>
+                      { icon: 'description', color: 'text-positive', label: 'What this is', text: 'An AI voice assistant that collects check-in information and charts it for your licensed provider.' },
+                      { icon: 'block', color: 'text-danger', label: 'What this is not', text: 'Not medical advice, diagnosis, treatment, or crisis support.' },
+                      { icon: 'lock', color: 'text-brand', label: 'Your responses', text: 'Transcribed, summarized, and stored in your clinic record (FHIR) for your provider to review before your visit.' },
+                      { icon: 'emergency', color: 'text-danger', label: 'Emergency', text: 'If you are in immediate danger, call 911 (or 988 for mental health crisis) now.' },
+                    ].map(({ icon, color, label, text }) => (
+                      <div key={label} className="bg-panel p-4.5 flex flex-col gap-2 transition-all duration-200 hover:bg-bright hover:-translate-y-0.5">
+                        <Icon name={icon} className={`text-[25px] ${color}`} />
+                        <p className="text-[12.5px] font-bold text-ink">{label}</p>
+                        <p className="text-[12.5px] leading-relaxed text-body">{text}</p>
                       </div>
                     ))}
                   </div>
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} className="mt-1 accent-brand w-4 h-4" />
+
+                  <label className="mt-5 flex items-start gap-3 bg-bright border border-line px-4 py-3.5 cursor-pointer transition-colors duration-200 hover:border-ink">
+                    <input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} className="mt-0.5 accent-brand w-4 h-4" />
                     <span className="text-sm text-ink leading-relaxed">
                       I understand this is an AI check-in assistant, not a clinician. I consent to my responses being charted for my provider&apos;s review.
                     </span>
                   </label>
-                  <div className="flex gap-3 pt-1">
-                    <Btn variant="secondary" onClick={() => window.history.back()} className="flex-1 px-6 py-3.5">Back</Btn>
-                    <button onClick={beginCheckIn} disabled={!consented || loading}
-                      className="flex-1 bg-brand hover:bg-brand-dark disabled:bg-line disabled:text-faint text-white font-semibold rounded-xl px-6 py-3.5 transition-all duration-200 shadow-sm disabled:shadow-none">
+
+                  <div className="mt-5 flex gap-2.5">
+                    <Btn variant="secondary" onClick={() => window.history.back()} className="px-6 py-3.5 flex items-center gap-2 text-xs">
+                      <Icon name="west" className="text-[17px]" />Back
+                    </Btn>
+                    <Btn onClick={beginCheckIn} disabled={!consented || loading}
+                      className="flex-1 px-6 py-3.5 flex items-center justify-center gap-2.5 text-[12.5px]">
+                      <Icon name="mic" className="text-[18px]" />
                       {loading ? 'Starting…' : 'Start Voice Check-in'}
-                    </button>
+                    </Btn>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {step === 'calling' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-line overflow-hidden">
-                <div className="px-8 pt-8 pb-6 border-b border-line bg-gradient-to-br from-brand/8 to-brand-accent/5">
-                  <h1 className="text-2xl font-bold text-ink">
-                    {demoMode ? 'Demo Mode' : voiceState === 'ended' ? 'Check-in Complete' : voiceState === 'connecting' ? 'Connecting…' : 'Voice Check-in Active'}
-                  </h1>
-                  <p className="mt-1.5 text-body text-sm">
-                    {demoMode ? 'No voice keys configured — use the demo transcript to see the full pipeline.'
-                      : 'Speak naturally. Ask what your visit will cost — Prelude checks your coverage live.'}
-                  </p>
-                  {!demoMode && (
-                    <p className="mt-2 text-[10px] uppercase tracking-widest text-faint">
-                      Voice engine · {provider === 'grok' ? 'Grok Voice (fallback)' : 'Deepgram Voice Agent'}
+              {step === 'calling' && (
+                <div className="border border-line bg-panel">
+                  <div className="p-6 sm:p-8 pb-5 sm:pb-5 border-b border-line">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <h1 className="text-2xl font-extrabold text-ink tracking-tight">
+                        {demoMode ? 'Demo Mode' : voiceState === 'ended' ? 'Check-in Complete' : voiceState === 'connecting' ? 'Connecting…' : 'Speak naturally'}
+                      </h1>
+                      {!demoMode && (
+                        <span className="flex items-center gap-2 text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">
+                          <Icon name="graphic_eq" className="text-[16px] text-positive" />
+                          {provider === 'grok' ? 'Grok Voice (fallback)' : 'Deepgram Voice Agent'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm text-body">
+                      {demoMode ? 'No voice keys configured — use the demo transcript to see the full pipeline.'
+                        : 'Speak naturally. Ask what your visit will cost — Prelude checks your coverage live.'}
                     </p>
-                  )}
-                </div>
-                <div className="px-8 py-8 space-y-6">
-                  {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-700 flex gap-3"><span>⚠</span>{error}</div>
-                  )}
+                  </div>
 
-                  {demoMode ? (
-                    <div className="space-y-4">
-                      <div className="bg-surface border border-line rounded-2xl p-5">
-                        <p className="text-xs font-semibold text-body uppercase tracking-wider mb-3">Demo transcript preview</p>
-                        <p className="text-sm text-body leading-relaxed line-clamp-4">{DEMO_TRANSCRIPT}</p>
+                  <div className="p-6 sm:p-8 space-y-5">
+                    {error && (
+                      <div className="flex items-center gap-3.5 bg-danger/10 border-l-4 border-danger px-4 py-3 text-sm text-danger">
+                        <Icon name="warning" className="text-[20px] shrink-0" />{error}
                       </div>
-                      <button onClick={() => finishCall(DEMO_TRANSCRIPT)} disabled={finishing}
-                        className="w-full bg-brand hover:bg-brand-dark disabled:bg-line text-white font-semibold rounded-xl px-6 py-3.5 transition-all">
-                        {finishing ? 'Charting to Medplum…' : 'Use Demo Transcript + Chart Visit'}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      <div className="rounded-2xl p-10 text-center bg-surface border border-line">
-                        <Visualizer state={voiceState} />
-                      </div>
+                    )}
 
-                      {coverage && (
-                        <div className="bg-brand/5 border border-brand/30 rounded-2xl p-5">
-                          <p className="text-xs font-semibold text-brand-dark uppercase tracking-widest mb-2">
-                            Live coverage check · {coverage.source === 'stedi' ? 'Stedi test mode' : 'synthetic data'}
-                          </p>
-                          <p className="text-sm text-ink font-semibold">{coverage.payer} — {coverage.plan_status}</p>
-                          <p className="text-sm text-body mt-1">
-                            {coverage.copay != null ? `Copay ~$${coverage.copay}` : `Est. $${coverage.estimated_visit_cost.min}–$${coverage.estimated_visit_cost.max}`}
-                            {coverage.deductible_remaining != null ? ` · Deductible remaining $${coverage.deductible_remaining}` : ''}
-                          </p>
+                    {demoMode ? (
+                      <div className="space-y-4">
+                        <div className="border border-line bg-bright">
+                          <div className="flex items-center gap-2.5 px-5 pt-4">
+                            <Icon name="smart_toy" className="text-[18px] text-brand" />
+                            <span className="text-[9.5px] font-bold uppercase tracking-[.2em] text-faint">Demo transcript preview</span>
+                          </div>
+                          <p className="px-5 py-4 text-sm text-body leading-relaxed line-clamp-4 whitespace-pre-line">{DEMO_TRANSCRIPT}</p>
                         </div>
-                      )}
-
-                      {transcript.length > 0 && (
-                        <div className="bg-surface border border-line rounded-2xl p-5 space-y-3 max-h-52 overflow-y-auto">
-                          <p className="text-xs font-semibold text-body uppercase tracking-widest">Live transcript · charting as you speak</p>
-                          {transcript.map((u, i) => (
-                            <div key={i} className={`flex gap-2 text-sm ${u.role === 'agent' ? 'text-brand-dark' : 'text-ink'}`}>
-                              <span className="font-bold text-xs uppercase opacity-50 shrink-0 mt-0.5 w-14">{u.role === 'agent' ? 'Prelude' : 'You'}</span>
-                              <span className="leading-relaxed">{u.content}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {(voiceState === 'active' || voiceState === 'agent_speaking') && (
-                        <Btn variant="dangerSoft" onClick={() => finishCall()} disabled={finishing} className="w-full px-6 py-3.5">
-                          {finishing ? 'Charting to Medplum…' : 'End Check-in'}
+                        <Btn onClick={() => finishCall(DEMO_TRANSCRIPT)} disabled={finishing}
+                          className="w-full px-6 py-4 flex items-center justify-center gap-2.5 text-[13px]">
+                          <Icon name="hub" className={`text-[18px] ${finishing ? 'animate-pulse' : ''}`} />
+                          {finishing ? 'Charting to Medplum…' : 'Use Demo Transcript + Chart Visit'}
                         </Btn>
-                      )}
-                      {(voiceState === 'ended' || voiceState === 'error') && !finishing && (
-                        <button onClick={() => finishCall()}
-                          className="w-full bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl px-6 py-3.5 transition-all shadow-sm">
-                          Generate Visit Note →
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+                      </div>
+                    ) : (
+                      <div className="space-y-5">
+                        <VoiceStage state={voiceState} />
 
-            {step === 'complete' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-line overflow-hidden">
-                <div className="bg-gradient-to-br from-brand/8 to-brand-accent/5 px-8 pt-10 pb-8 text-center">
+                        {(voiceState === 'active' || voiceState === 'agent_speaking') && (
+                          <div className="flex items-end justify-center gap-1.5 h-7" aria-hidden>
+                            {['bg-ink', 'bg-ink', 'bg-caution', 'bg-danger', 'bg-caution', 'bg-ink', 'bg-ink'].map((c, i) => (
+                              <span key={i} className={`w-[7px] h-full ${c} ${voiceState === 'agent_speaking' ? 'voice-bar-active' : 'voice-bar'}`} />
+                            ))}
+                          </div>
+                        )}
+
+                        {coverage && (
+                          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}
+                            className="bg-brand p-5">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="flex items-center gap-2 text-[9.5px] font-bold uppercase tracking-[.2em] text-bright/85">
+                                <Icon name="shield" className="text-[17px]" />Live coverage check
+                              </span>
+                              <span className="text-[8.5px] font-semibold uppercase tracking-[.14em] text-bright/60 border border-bright/30 px-2 py-1">
+                                {coverage.source === 'stedi' ? 'Stedi test mode' : 'synthetic data'}
+                              </span>
+                            </div>
+                            <p className="mt-3.5 text-[26px] font-extrabold leading-tight tracking-tight text-bright">{coverage.payer}</p>
+                            <p className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-bright/90">
+                              <Icon name="verified" className="text-[16px]" />{coverage.plan_status}
+                            </p>
+                            <div className="mt-4 grid grid-cols-2 gap-px bg-bright/20">
+                              {coverage.copay != null ? (
+                                <div className="bg-brand p-3">
+                                  <span className="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[.16em] text-bright/60">
+                                    <Icon name="payments" className="text-[14px]" />Copay
+                                  </span>
+                                  <p className="mt-1.5 font-numeral text-3xl text-bright">${coverage.copay}</p>
+                                </div>
+                              ) : (
+                                <div className="bg-brand p-3">
+                                  <span className="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[.16em] text-bright/60">
+                                    <Icon name="videocam" className="text-[14px]" />Visit est.
+                                  </span>
+                                  <p className="mt-1.5 font-numeral text-3xl text-bright">${coverage.estimated_visit_cost.min}–{coverage.estimated_visit_cost.max}</p>
+                                </div>
+                              )}
+                              {coverage.deductible_remaining != null && (
+                                <div className="bg-brand p-3">
+                                  <span className="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[.16em] text-bright/60">
+                                    <Icon name="savings" className="text-[14px]" />Deduct. left
+                                  </span>
+                                  <p className="mt-1.5 font-numeral text-3xl text-bright">${coverage.deductible_remaining}</p>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {transcript.length > 0 && (
+                          <div className="border border-line bg-bright px-5 py-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="flex items-center gap-2 text-[9.5px] font-bold uppercase tracking-[.18em] text-body">
+                                <Icon name="record_voice_over" className="text-[17px]" />Live transcript
+                              </span>
+                              <span className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[.16em] text-brand">
+                                <Icon name="hub" className="text-[15px] animate-pulse" />Charting to FHIR
+                              </span>
+                            </div>
+                            <div ref={transcriptRef} className="mt-2.5 max-h-52 overflow-y-auto">
+                              {transcript.map((u, i) => (
+                                <div key={i} className="grid grid-cols-[24px_1fr] gap-3 py-2.5 border-t border-line/60 first:border-t-0">
+                                  <Icon name={u.role === 'agent' ? 'smart_toy' : 'person'}
+                                    className={`text-[18px] mt-0.5 ${u.role === 'agent' ? 'text-brand' : 'text-danger'}`} />
+                                  <p className={`text-[13.5px] leading-relaxed ${u.role === 'agent' ? 'text-body' : 'text-ink'}`}>{u.content}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {(voiceState === 'active' || voiceState === 'agent_speaking') && (
+                          <Btn variant="dangerSoft" onClick={() => finishCall()} disabled={finishing}
+                            className="w-full px-6 py-3.5 flex items-center justify-center gap-2.5 text-xs">
+                            <Icon name="stop_circle" className="text-[18px]" />
+                            {finishing ? 'Charting to Medplum…' : 'End Check-in'}
+                          </Btn>
+                        )}
+                        {(voiceState === 'ended' || voiceState === 'error') && !finishing && (
+                          <Btn onClick={() => finishCall()}
+                            className="w-full px-6 py-4 flex items-center justify-center gap-2.5 text-[13px]">
+                            Generate Visit Note<Icon name="arrow_forward" className="text-[18px]" />
+                          </Btn>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {step === 'complete' && <CoverageBot />}
+              {step === 'complete' && (
+                <div className="border border-line bg-panel p-6 sm:p-8">
+                  <div className="flex items-center gap-2.5">
+                    <Icon name="task_alt" className="text-[20px] text-positive" />
+                    <span className="text-[10px] font-bold uppercase tracking-[.22em] text-positive">Step 4 · done</span>
+                  </div>
+
                   <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                    className="w-20 h-20 bg-brand rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand/30">
-                    <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                    className="mt-6 w-24 h-24 flex items-center justify-center text-bright [background:linear-gradient(135deg,var(--color-positive),var(--color-ink))]">
+                    <Icon name="check" className="text-[52px]" />
                   </motion.div>
-                  <h1 className="text-2xl font-bold text-ink">You&apos;re checked in</h1>
-                  <p className="mt-3 text-body leading-relaxed text-sm max-w-sm mx-auto">
+
+                  <h1 className="mt-5 text-[34px] font-extrabold leading-none tracking-tight text-ink">You&apos;re checked in</h1>
+                  <p className="mt-3 max-w-sm text-sm text-body leading-relaxed">
                     Your conversation was charted as FHIR resources in Medplum. Your provider will review the AI draft note before your visit.
                   </p>
-                </div>
-                <div className="px-8 py-6 space-y-3">
-                  {noteId && (
-                    <Link href={`/dashboard/${noteId}`}
-                      className="block text-center bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl px-6 py-3.5 transition-all shadow-sm">
-                      View the provider&apos;s draft note →
-                    </Link>
-                  )}
-                  <Link href="/dashboard" className="block text-center text-sm text-brand hover:text-brand-dark transition-colors font-medium py-2">
-                    Provider dashboard →
-                  </Link>
-                </div>
-              </div>
-            )}
 
-          </motion.div>
-        </AnimatePresence>
+                  <div className="mt-5 flex flex-col gap-px bg-line border border-line">
+                    {[
+                      { icon: 'person', color: 'text-brand', label: 'Patient · Encounter created' },
+                      { icon: 'article', color: 'text-brand', label: 'DocumentReference · transcript' },
+                      { icon: 'note_alt', color: 'text-caution', label: 'Composition · SOAP draft' },
+                      ...(coverage?.copay != null
+                        ? [{ icon: 'payments', color: 'text-positive', label: `Copay $${coverage.copay} · confirmed` }]
+                        : []),
+                    ].map(({ icon, color, label }) => (
+                      <div key={label} className="bg-bright px-4 py-3 flex items-center gap-3">
+                        <Icon name={icon} className={`text-[19px] ${color}`} />
+                        <span className="text-xs font-semibold text-ink">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 space-y-2.5">
+                    {noteId && (
+                      <Link href={`/dashboard/${noteId}`}
+                        className="flex items-center justify-center gap-2.5 bg-ink text-bright font-bold text-xs tracking-[.06em] px-6 py-4 transition-all duration-200 hover:[background:var(--grad-hover)] hover:tracking-[.1em]">
+                        <Icon name="description" className="text-[18px]" />
+                        View the provider&apos;s draft note
+                      </Link>
+                    )}
+                    <Link href="/dashboard"
+                      className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-brand transition-colors hover:text-brand-dark">
+                      Provider dashboard<Icon name="arrow_forward" className="text-[16px]" />
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </main>
     </div>
   );

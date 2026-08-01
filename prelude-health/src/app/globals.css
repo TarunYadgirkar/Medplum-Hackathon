@@ -1,43 +1,77 @@
 @import "tailwindcss";
 
 /* ── Design-language tokens ─────────────────────────────────────────────
-   The Claude Design language lands HERE first: swap these values and every
-   token-routed utility (bg-brand, text-ink, border-line, …) follows.
-   Keep names semantic — no color words on the left side. */
+   Values from the Claude Design handoff (docs/UI_SPEC.md · "Prelude UI
+   Handoff.dc.html"). Everything routes through these + primitives.tsx —
+   never inline hex in pages.
+   Ink 17161A · paper EDEAE2 · panel F7F5EF · bright FCFBF7 ·
+   brand 23407F · danger A8342B · caution B8862B · positive 2E5F52 ·
+   hover gradient B8862B→A8342B · RADIUS 0 EVERYWHERE (circles are
+   reserved for the voice UI). */
 @theme {
-  --color-brand: #00b894;
-  --color-brand-dark: #00897b;
-  --color-brand-accent: #00ceb8;
-  --color-brand-light: #e6faf6;
+  --color-brand: #23407f;
+  --color-brand-dark: #1a3163;
+  --color-brand-accent: #b8862b;
+  --color-brand-light: #dfe5f2;
 
-  --color-ink: #0f172a;
-  --color-body: #64748b;
-  --color-faint: #94a3b8;
-  --color-line: #e2e8f0;
-  --color-surface: #f8fafc;
+  --color-ink: #17161a;
+  --color-body: rgb(23 22 26 / 0.68);
+  --color-faint: rgb(23 22 26 / 0.5);
+  --color-line: rgb(23 22 26 / 0.16);
+  --color-surface: #edeae2;
+  --color-panel: #f7f5ef;
+  --color-bright: #fcfbf7;
+
+  --color-danger: #a8342b;
+  --color-caution: #b8862b;
+  --color-positive: #2e5f52;
+
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --font-numeral: var(--font-jost), sans-serif;
+  --font-mono: var(--font-spline-mono), monospace;
 }
 
 :root {
-  /* Brand */
-  --teal: #00B894;
-  --teal-dark: #00897B;
-  --teal-accent: #00CEB8;
-  --teal-light: #E6FAF6;
-
-  /* Neutrals */
-  --ink: #0F172A;
-  --muted: #64748B;
-  --border: #E2E8F0;
-  --surface: #F8FAFC;
+  /* Legacy aliases (pre-handoff code paths) */
+  --teal: #23407f;
+  --teal-dark: #1a3163;
+  --teal-accent: #b8862b;
+  --teal-light: #dfe5f2;
+  --ink: #17161a;
+  --muted: rgb(23 22 26 / 0.68);
+  --border: rgb(23 22 26 / 0.16);
+  --surface: #edeae2;
 
   /* Motion */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Hover treatment for primary actions */
+  --grad-hover: linear-gradient(135deg, #b8862b, #a8342b);
 }
 
 body {
   background: var(--surface);
   color: var(--ink);
   font-feature-settings: "ss01", "cv01";
+}
+
+/* Material Symbols Sharp icon helper (loaded in layout.tsx) */
+.msymbol {
+  font-family: 'Material Symbols Sharp';
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Jost 300 numerals */
+.font-numeral {
+  font-family: var(--font-numeral);
+  font-weight: 300;
 }
 
 /* ── Voice visualizer bars ── */
@@ -88,7 +122,7 @@ body {
   animation: mesh-drift 14s ease-in-out infinite;
 }
 
-/* ── Breathing pulse for connecting state ── */
+/* ── Breathing pulse for connecting state (voice orb — circles allowed) ── */
 @keyframes breathe {
   0%, 100% { opacity: 0.5; transform: scale(0.94); }
   50%       { opacity: 1;   transform: scale(1.06); }

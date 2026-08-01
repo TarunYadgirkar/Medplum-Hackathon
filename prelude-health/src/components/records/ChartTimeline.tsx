@@ -1,6 +1,9 @@
 'use client';
 
-import { LAB_FLAG_STYLES, type EpicImportResult } from '@/data/epic-mock';
+// Restyled per the design handoff (§6c chart language): sharp corners,
+// token colors only, square event dots, micro-label month headers.
+
+import type { EpicImportResult } from '@/data/epic-mock';
 
 interface TimelineEvent {
   key: string;
@@ -21,16 +24,23 @@ const MONTHS = [
 const MONTHS_SHORT = MONTHS.map((m) => m.slice(0, 3));
 
 const DOT = {
-  encounter: 'bg-brand ring-brand-light',
-  medication: 'bg-blue-500 ring-blue-100',
-  allergy: 'bg-red-500 ring-red-100',
-  condition: 'bg-amber-500 ring-amber-100',
-  labNormal: 'bg-emerald-500 ring-emerald-100',
-  labWarn: 'bg-amber-500 ring-amber-100',
-  labAlert: 'bg-red-500 ring-red-100',
-  immunization: 'bg-violet-500 ring-violet-100',
-  upcoming: 'border-2 border-brand bg-white ring-brand-light',
+  encounter: 'bg-brand',
+  medication: 'bg-panel border border-brand',
+  allergy: 'bg-danger',
+  condition: 'bg-caution',
+  labNormal: 'bg-positive',
+  labWarn: 'bg-caution',
+  labAlert: 'bg-danger',
+  immunization: 'bg-panel border border-positive',
+  upcoming: 'bg-bright border border-brand',
 } as const;
+
+const LAB_CHIP: Record<string, string> = {
+  NORMAL: 'bg-positive/10 text-positive',
+  HIGH: 'bg-danger/10 text-danger',
+  LOW: 'bg-danger/10 text-danger',
+};
+const LAB_CHIP_WARN = 'bg-caution/15 text-caution';
 
 const LEGEND = [
   { label: 'Visits', dotClass: DOT.encounter },
@@ -96,7 +106,7 @@ function buildEvents(record: EpicImportResult): TimelineEvent[] {
     ...record.labResults.map((lab, i) =>
       makeEvent(`lab-${i}`, lab.date, lab.name, lab.value, labDotClass(lab.flag), {
         label: lab.flag.replace('_', ' '),
-        cls: LAB_FLAG_STYLES[lab.flag] ?? 'bg-slate-100 text-slate-500',
+        cls: LAB_CHIP[lab.flag] ?? LAB_CHIP_WARN,
       }),
     ),
     ...record.medications.map((med, i) =>
@@ -168,42 +178,44 @@ export function ChartTimeline({ record }: { record: EpicImportResult }) {
   if (groups.length === 0) return null;
 
   return (
-    <div className="bg-white border border-line rounded-2xl shadow-sm p-5">
-      <h2 className="font-bold text-ink">Chart Timeline</h2>
+    <div className="bg-panel border border-line p-5">
+      <h2 className="font-extrabold text-ink">Chart Timeline</h2>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
         {LEGEND.map((item) => (
           <span key={item.label} className="flex items-center gap-1.5 text-xs font-medium text-faint">
-            <span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.dotClass}`} />
+            <span aria-hidden="true" className={`h-2 w-2 ${item.dotClass}`} />
             {item.label}
           </span>
         ))}
       </div>
-      <div className="mt-4 flex flex-col gap-6">
+      <div className="mt-5 flex flex-col gap-6">
         {groups.map((group) => (
           <section key={group.label} aria-label={group.label}>
-            <div className="flex items-center gap-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-faint">{group.label}</p>
-              <div aria-hidden="true" className="h-px flex-1 bg-line" />
-              <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-faint">
+            <div className="flex items-center gap-3.5">
+              <p className="text-[9.5px] font-bold uppercase tracking-[.22em] text-faint">{group.label}</p>
+              <div aria-hidden="true" className="h-px flex-1 bg-ink/20" />
+              <span className="border border-ink/20 px-2 py-0.5 text-[10px] font-semibold text-body font-numeral">
                 {group.events.length}
               </span>
             </div>
             <ol className="relative mt-3 flex flex-col gap-4 pl-5">
-              <span aria-hidden="true" className="absolute bottom-1 left-1 top-1 w-px bg-line" />
+              <span aria-hidden="true" className="absolute bottom-1 left-1 top-1 w-px bg-ink/20" />
               {group.events.map((event) => (
                 <li key={event.key} className="relative min-w-0">
                   <span
                     aria-hidden="true"
-                    className={`absolute -left-[19px] top-1 h-2.5 w-2.5 rounded-full ring-[3px] ${event.dotClass}`}
+                    className={`absolute -left-[19px] top-1 h-2.5 w-2.5 ${event.dotClass}`}
                   />
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                     {event.dayLabel && (
-                      <span className="text-xs font-medium tabular-nums text-faint">{event.dayLabel}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-[.12em] text-faint">
+                        {event.dayLabel}
+                      </span>
                     )}
-                    <p className="text-sm font-semibold leading-snug text-ink">{event.title}</p>
+                    <p className="text-sm font-bold leading-snug text-ink">{event.title}</p>
                     {event.chip && (
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${event.chip.cls}`}
+                        className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] ${event.chip.cls}`}
                       >
                         {event.chip.label}
                       </span>
