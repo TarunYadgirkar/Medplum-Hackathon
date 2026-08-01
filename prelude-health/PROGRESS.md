@@ -92,3 +92,80 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
 - [11:25] [lane-2] NOTE for Lane 3: /api/history "Moss query failed, using keyword fallback:
   TypeError: (results || []).map is not a function" — live Moss query response shape differs
   from expected array. Your fix, in moss.ts queryPatientHistory.
+- [12:10] [lane-2] SECURITY: my earlier lane-2 branch was cut from the PRE-rewrite history and
+  its push republished the committed .env on the public repo. Fixed: lane-2 work cherry-picked
+  onto clean main (e1d27d2, 2a34bb1), origin/lane-2 deleted, all remaining refs audited —
+  zero .env reachability. KEYS MUST STILL BE ROTATED (Deepgram/OpenAI/Medplum/Moss) —
+  GitHub caches deleted refs. Lesson: after a history rewrite, every un-rebased branch is a leak.
+- [12:15] [lane-2] Lane-4 ASK done: DELETE /api/patients/[id] route added (store.deletePatient —
+  Medplum RiskAssessment/Composition/DocumentReference/Encounter then Patient, + mem fallback).
+  Verified live: deleted test patient returns 410 from Medplum. Dashboard delete button works.
+- [12:15] [lane-2] Rerun `npx tsx scripts/cleanup-smoke.ts` right before video — smoke runs
+  since the last purge left new "Smoke Test" rows; also "Test Patient"/"E2E Verify"/"Moss Test"
+  junk rows can now be removed straight from the dashboard delete button.
+- [12:2x] [lane-1] SECURITY CLEANUP: origin/lane-2 and origin/lane-4 carried the old keys
+  commit (d2a04e8) after the history rewrite — both force-reset to clean main. ALL SESSIONS:
+  `git fetch && git reset --hard origin/<your-branch>` before your next push, or you will
+  reintroduce the leaked history. lane-2's and lane-4's work is all on main; nothing lost.
+  OPENAI_API_KEY was auto-revoked while exposed (401) — note generation falls back to demo
+  note until Tarun supplies a fresh key. Deepgram/Medplum/Moss keys still work.
+
+- [11:5x] [lane-3] MOSS LIVE: /api/history returns source:moss with ranked results (verified
+  against real keys). Fixed SDK query shape (SearchResult.docs, not bare array), made index
+  build non-blocking at intake-session start (job tracked; queries wait ≤2.5s then keyword-
+  fallback; failed builds lazily re-kick). loadIndex for in-memory speed. Keyless fallback
+  intact. NEXT: Stedi — BLOCKER: no STEDI_API_KEY in .env (get a test key from stedi.com);
+  meanwhile fixing MOCK_PAYERS + 271 parsing from docs so it's live the second the key lands.
+
+- [12:2x] [lane-3] STEDI PREPPED (blocked on key) + E2E VERIFIED. MOCK_PAYERS fixed from
+  Stedi's mock-requests docs — verified combos (subscriber-type, sent verbatim incl. name/
+  DOB/NPI 1999999984): UHC 87726/UHC123456, Cigna 62308/23456789100, Aetna 60054/AETNA12345,
+  CMS CMS/CMS12345678. (Old UHC202649 was dependent-type; Cigna/CMS ids were wrong.) 271
+  parsing rewritten per docs: status from benefitsInformation codes 1-5/6, in-network+IND
+  preferred, deductible timeQualifier 29(remaining)>23(annual), benefitPercent str fraction.
+  WHEN KEY LANDS: put STEDI_API_KEY in .env, run `npx tsx scripts/verify-stedi.ts` — all 4
+  payers should print source=stedi. E2E on lane-3: history source=moss post-build, saved
+  note coverage block present. build+smoke green. PR #1 open (lane-3→main) — needs a merge
+  click. ⚠ OPENAI_API_KEY is INVALIDATED (leaked-key auto-revoke; generate-note silently
+  demo-fallbacks) — need fresh key, local .env only. ⚠ rebases onto rewritten main DELETE
+  .env from worktrees — re-copy it after rebasing.
+- [12:25] [lane-2] Dashboard purged to camera-ready state: ONLY the 3 seeded demo patients
+  remain (Marcus urgent_review/high, Priya ai_draft/low, Robert reviewed/medium). All test
+  junk deleted from Medplum. If any lane runs smoke.sh again, rerun cleanup-smoke.ts after.
+  Lane 2 session ended.
+
+- [1:0x] [full-scope] Carepath features ported: (1) Epic MyChart import — 24-system modal,
+  simulated SMART on FHIR, /records page; imported chart feeds the voice prompt (fenced as
+  untrusted data) AND the Moss history index via intake-session historyDocs (sanitized
+  server-side). (2) MedCard — /medcard, 3-col card + pill scanner (graceful no-key state).
+  (3) Reddit communities — /api/communities (OpenAI w/ curated keyless fallback + Arctic
+  Shift enrichment) on the provider note page. Reviews run (react/ts/security): CRITICAL
+  server-side sanitization fixed, size caps + localStorage validation added; known gaps
+  left per MVP scope: no auth on patientId routes, no abort guards on scanner/communities
+  fetches. Deployed: prelude-health.vercel.app (Vercel project linked to GitHub, root
+  prelude-health, auto-deploy on main). Vercel env vars pending Tarun (fresh OpenAI key!).
+
+- [11:50] [lane-1/review] Full 3-agent review (security/react/ts) of the carepath-port layer
+  (epic import, medcard scanner, records, communities) — no CRITICAL. Fixed + pushed (155e1c4,
+  ee72757 w/ concurrent session): server-side sanitizeField on historyDocs[]/patientName/
+  appointmentType in intake-session route (public POST was injectable into voice prompt + SOAP
+  note), try/catch guards on buildEpicContext/getImportedHistoryDocs/buildMedCardContext (stale
+  localStorage shape threw inside voice start() and leaked the WS), req.json().catch, root
+  .gitignore for .vercel/. Build + smoke green, smoke rows cleaned from Medplum. STILL OPEN:
+  OPENAI_API_KEY revoked (401 — blocks generate-note/scan-label/communities; Tarun supplying),
+  STEDI_API_KEY missing, scan-label 8MB zod limit vs ~4.5MB Vercel body cap, no rate limiting
+  on new OpenAI-backed routes, old Deepgram/Medplum/Moss keys unrotated.
+
+- [12:05] [lane-1/review] KEYS VERIFIED LIVE (local + Vercel): OpenAI 200 — communities returns
+  source:openai with real Arctic Shift member counts (local AND prelude-health.vercel.app),
+  scan-label available:true via vision, generate-note produced a real transcript-derived note
+  (test patient created + deleted). All 5 prod pages 200. STILL MISSING: STEDI_API_KEY (not in
+  .env or .env.local) — eligibility stays on synthetic fallback until it lands; then run
+  `npx tsx scripts/verify-stedi.ts`.
+- [2:0x] [full-scope] Brief-alignment: NEW /api/research + ResearchPanel on the note page —
+  deep research (patient explainer + provider considerations + red flags), care-level
+  spectrum viz, color risk pills, care-options table w/ medical-fit badges + coverage-aware
+  costs (ported/adapted from carepath classify + CareOptionsTable + RiskSignalTags +
+  timeline ramp). Verified live w/ OpenAI on Marcus's note. Also: modal double-click fix,
+  free-text appointment type, demo copy cleanup. Before video: rerun cleanup-smoke.ts if
+  any smoke.sh ran since last purge.

@@ -2,12 +2,14 @@
 // Patient voice check-in — UI structure carried over from klarity-voicenote's
 // intake flow, voice engine swapped from Retell to the Deepgram Voice Agent.
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useGrokVoice } from '@/hooks/useGrokVoice';
 import { Nav, Btn } from '@/components/primitives';
+import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
+import { getImportedHistoryDocs, getEpicImport, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const STEPS = ['Form', 'Consent', 'Check-in', 'Done'];
@@ -81,6 +83,14 @@ export default function IntakePage() {
   const [provider, setProvider] = useState<'deepgram' | 'grok' | 'demo'>('deepgram');
   const [finishing, setFinishing] = useState(false);
   const [noteId, setNoteId] = useState<string | null>(null);
+  const [chartConnected, setChartConnected] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setChartConnected(Boolean(getEpicImport()));
+    sync();
+    window.addEventListener(RECORDS_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(RECORDS_CHANGED_EVENT, sync);
+  }, []);
 
   // Two interchangeable voice engines: Deepgram Voice Agent (sponsor, primary)
   // and Grok Voice (carried over from carepath as a battle-tested backup).
@@ -95,7 +105,7 @@ export default function IntakePage() {
       const res = await fetch('/api/intake-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientName: name, appointmentType, ageRange }),
+        body: JSON.stringify({ patientName: name, appointmentType, ageRange, historyDocs: getImportedHistoryDocs() ?? undefined }),
       });
       const data = await res.json();
       setSession(data);
@@ -194,14 +204,18 @@ export default function IntakePage() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink mb-1.5">Appointment type</label>
-                      <select value={appointmentType} onChange={(e) => setAppointmentType(e.target.value)}
-                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
-                        <option>Sick visit</option>
-                        <option>New patient visit</option>
-                        <option>Annual physical</option>
-                        <option>Follow-up</option>
-                        <option>Telehealth consult</option>
-                      </select>
+                      <input type="text" list="appointment-types" value={appointmentType}
+                        onChange={(e) => setAppointmentType(e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="Sick visit, follow-up, knee pain consult…"
+                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink placeholder-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all" />
+                      <datalist id="appointment-types">
+                        <option value="Sick visit" />
+                        <option value="New patient visit" />
+                        <option value="Annual physical" />
+                        <option value="Follow-up" />
+                        <option value="Telehealth consult" />
+                      </datalist>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink mb-1.5">Age range <span className="text-faint font-normal">(optional)</span></label>
@@ -211,6 +225,19 @@ export default function IntakePage() {
                         <option>18–24</option><option>25–34</option><option>35–44</option><option>45–54</option><option>55+</option>
                       </select>
                     </div>
+                  </div>
+                  <div className={`rounded-2xl border p-4 flex items-center justify-between gap-3 transition-colors ${chartConnected ? 'bg-brand/5 border-brand/30' : 'bg-surface border-line'}`}>
+                    <div>
+                      <p className="text-sm font-semibold text-ink">
+                        {chartConnected ? `Health records connected · ${getEpicImport()?.systemName ?? ''}` : 'Use MyChart?'}
+                      </p>
+                      <p className="text-xs text-body mt-0.5">
+                        {chartConnected
+                          ? 'Prelude has your meds, allergies and history — it won’t re-ask.'
+                          : 'Import your record so Prelude already knows your meds and allergies.'}
+                      </p>
+                    </div>
+                    <ConnectHealthRecordsButton />
                   </div>
                   <Btn onClick={() => setStep('consent')} disabled={!name.trim()} className="w-full px-6 py-3.5">
                     Continue →

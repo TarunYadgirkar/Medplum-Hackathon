@@ -7,6 +7,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { AGENT_WS_URL, buildAgentSettings } from '@/lib/agent-config';
 import { floatTo16BitPCM } from '@/lib/audio';
+import { buildEpicContext, getEpicImport } from '@/lib/epic-import';
+import { buildMedCardContext, getMedCard } from '@/lib/medcard';
 import type { CoverageSummary, TranscriptUtterance } from '@/types';
 
 export type VoiceAgentState = 'idle' | 'connecting' | 'active' | 'agent_speaking' | 'ended' | 'error';
@@ -154,8 +156,23 @@ export function useVoiceAgent() {
     ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
 
+    const chartContext = [buildEpicContext(), buildMedCardContext(getMedCard())].filter(Boolean).join('\n') || null;
+    const epicImport = getEpicImport();
+    const medCard = getMedCard();
+    const keyterms = [
+      ...(epicImport?.record.medications.map((m) => m.name.split(' ')[0]) ?? []),
+      ...(epicImport?.record.allergies.map((a) => a.substance) ?? []),
+      ...(medCard?.medications.map((m) => m.split(' ')[0]) ?? []),
+      'copay', 'deductible', 'telehealth',
+    ].filter((t, i, all) => t && all.indexOf(t) === i);
+
     ws.onopen = async () => {
-      ws.send(JSON.stringify(buildAgentSettings(args)));
+      ws.send(JSON.stringify(buildAgentSettings({
+        ...args,
+        chartContext,
+        chartSystemName: epicImport?.systemName ?? null,
+        keyterms,
+      })));
       // KeepAlive prevents the agent socket from idling out during pauses.
       keepAliveRef.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'KeepAlive' }));
