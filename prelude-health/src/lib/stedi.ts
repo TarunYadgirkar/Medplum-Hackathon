@@ -1,17 +1,23 @@
 // Stedi Healthcare test-mode eligibility check.
 // Docs: https://www.stedi.com/docs/healthcare/send-eligibility-checks
+//       https://www.stedi.com/docs/healthcare/api-reference/mock-requests-eligibility-checks
 // Test mode is free, uses mock payers, and never touches real PHI.
 import { syntheticPricing, DEFAULT_PLAN_KEY } from '@/data/synthetic-pricing';
 import type { CareLevel, CoverageSummary } from '@/types';
 
 const STEDI_URL = 'https://healthcare.us.stedi.com/2024-04-01/change/medicalnetwork/eligibility/v3';
 
-// Stedi test-mode mock payers (test member IDs per Stedi docs / mock request library).
-export const MOCK_PAYERS: Record<string, { name: string; tradingPartnerServiceId: string; memberId: string }> = {
-  UHC: { name: 'UnitedHealthcare (mock)', tradingPartnerServiceId: '87726', memberId: 'UHC202649' },
-  CIGNA: { name: 'Cigna (mock)', tradingPartnerServiceId: '62308', memberId: 'CIGNA731608' },
-  AETNA: { name: 'Aetna (mock)', tradingPartnerServiceId: '60054', memberId: 'AETNA9wcSu' },
-  CMS: { name: 'Medicare CMS (mock)', tradingPartnerServiceId: 'CMS', memberId: '1EG4TE5MK73' },
+// Stedi test-mode mock payers — VERIFIED against Stedi's mock-requests docs
+// (2026-08-01). Test mode only accepts these documented subscriber combos
+// verbatim (memberId + name + DOB + NPI 1999999984); anything else errors.
+export const MOCK_PAYERS: Record<
+  string,
+  { name: string; tradingPartnerServiceId: string; memberId: string; firstName: string; lastName: string; dateOfBirth: string }
+> = {
+  UHC: { name: 'UnitedHealthcare (mock)', tradingPartnerServiceId: '87726', memberId: 'UHC123456', firstName: 'Jane', lastName: 'Doe', dateOfBirth: '19710101' },
+  CIGNA: { name: 'Cigna (mock)', tradingPartnerServiceId: '62308', memberId: '23456789100', firstName: 'James', lastName: 'Jones', dateOfBirth: '19910202' },
+  AETNA: { name: 'Aetna (mock)', tradingPartnerServiceId: '60054', memberId: 'AETNA12345', firstName: 'Jane', lastName: 'Doe', dateOfBirth: '20040404' },
+  CMS: { name: 'Medicare CMS (mock)', tradingPartnerServiceId: 'CMS', memberId: 'CMS12345678', firstName: 'Jane', lastName: 'Doe', dateOfBirth: '19550505' },
 };
 
 const CARE_LEVEL_TO_BASE_COST: Record<CareLevel, { min: number; max: number }> = {
@@ -46,15 +52,18 @@ export async function checkEligibility(args: EligibilityArgs): Promise<CoverageS
         Authorization: process.env.STEDI_API_KEY,
         'Content-Type': 'application/json',
       },
+      // Test mode rejects non-documented combos, so the subscriber identity is
+      // always the payer's documented mock — caller names are demo-only input.
       body: JSON.stringify({
         tradingPartnerServiceId: payer.tradingPartnerServiceId,
-        encounter: { serviceTypeCodes: ['30'] }, // 30 = health benefit plan coverage
-        provider: { organizationName: 'Prelude Health Clinic', npi: '1999999984' },
+        provider: { organizationName: 'Provider Name', npi: '1999999984' },
         subscriber: {
-          firstName: args.firstName || 'Jane',
-          lastName: args.lastName || 'Doe',
-          memberId: args.memberId || payer.memberId,
+          firstName: payer.firstName,
+          lastName: payer.lastName,
+          dateOfBirth: payer.dateOfBirth,
+          memberId: payer.memberId,
         },
+        encounter: { serviceTypeCodes: ['30'] }, // 30 = health benefit plan coverage
       }),
     });
     if (!res.ok) throw new Error(`Stedi ${res.status}: ${await res.text()}`);
@@ -67,23 +76,43 @@ export async function checkEligibility(args: EligibilityArgs): Promise<CoverageS
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function parseStediResponse(
+// Exported for scripts/verify-stedi.ts (parse check without a live key).
+export function parseStediResponse(
   data: any,
   payerName: string,
   careLevel: CareLevel,
   baseCost: { min: number; max: number }
 ): CoverageSummary {
-  const planStatus: string =
-    data?.planStatus?.[0]?.status || data?.benefitsInformation?.find((b: any) => b.code === '1' || b.code === '6')?.name || 'Unknown';
-
   const benefits: any[] = Array.isArray(data?.benefitsInformation) ? data.benefitsInformation : [];
-  const amount = (code: string): number | undefined => {
-    const hit = benefits.find((b) => b.code === code && b.benefitAmount != null);
-    return hit ? Number(hit.benefitAmount) : undefined;
-  };
-  const copay = amount('B'); // co-payment
-  const deductible = amount('C'); // deductible
-  const coinsHit = benefits.find((b) => b.code === 'A' && b.benefitPercent != null);
+
+  // Plan status: benefitsInformation codes 1-5 = active, 6 = inactive.
+  // (planStatus[] is deprecated in Stedi's API — kept only as a last resort.)
+  const activeHit = benefits.find((b) => ['1', '2', '3', '4', '5'].includes(b.code));
+  const inactiveHit = benefits.find((b) => b.code === '6');
+  const planStatus: string =
+    (activeHit ? activeHit.name || 'Active Coverage' : inactiveHit ? inactiveHit.name || 'Inactive' : null) ||
+    data?.planStatus?.[0]?.status ||
+    'Unknown';
+
+  // Prefer in-network, individual-level benefit entries.
+  const rank = (b: any) =>
+    (b.inPlanNetworkIndicatorCode === 'N' ? 2 : 0) + (b.coverageLevelCode && b.coverageLevelCode !== 'IND' ? 1 : 0);
+  const pick = (pred: (b: any) => boolean): any | undefined =>
+    benefits.filter(pred).sort((a, b) => rank(a) - rank(b))[0];
+
+  // B = Co-Payment (benefitAmount is a string dollar figure).
+  const copayHit = pick((b) => b.code === 'B' && b.benefitAmount != null);
+  const copay = copayHit ? Number(copayHit.benefitAmount) : undefined;
+
+  // C = Deductible; timeQualifierCode 29 = Remaining, 23 = Calendar Year total.
+  const dedHit =
+    pick((b) => b.code === 'C' && b.benefitAmount != null && b.timeQualifierCode === '29') ||
+    pick((b) => b.code === 'C' && b.benefitAmount != null && b.timeQualifierCode === '23') ||
+    pick((b) => b.code === 'C' && b.benefitAmount != null);
+  const deductible = dedHit ? Number(dedHit.benefitAmount) : undefined;
+
+  // A = Co-Insurance (benefitPercent is a string fraction, e.g. "0.20" = 20%).
+  const coinsHit = pick((b) => b.code === 'A' && b.benefitPercent != null);
   const coinsurance = coinsHit ? Math.round(Number(coinsHit.benefitPercent) * 100) : undefined;
 
   const est = estimateOutOfPocket(baseCost, copay, coinsurance, deductible);

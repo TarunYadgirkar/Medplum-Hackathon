@@ -109,3 +109,23 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   reintroduce the leaked history. lane-2's and lane-4's work is all on main; nothing lost.
   OPENAI_API_KEY was auto-revoked while exposed (401) — note generation falls back to demo
   note until Tarun supplies a fresh key. Deepgram/Medplum/Moss keys still work.
+
+- [11:5x] [lane-3] MOSS LIVE: /api/history returns source:moss with ranked results (verified
+  against real keys). Fixed SDK query shape (SearchResult.docs, not bare array), made index
+  build non-blocking at intake-session start (job tracked; queries wait ≤2.5s then keyword-
+  fallback; failed builds lazily re-kick). loadIndex for in-memory speed. Keyless fallback
+  intact. NEXT: Stedi — BLOCKER: no STEDI_API_KEY in .env (get a test key from stedi.com);
+  meanwhile fixing MOCK_PAYERS + 271 parsing from docs so it's live the second the key lands.
+
+- [12:2x] [lane-3] STEDI PREPPED (blocked on key) + E2E VERIFIED. MOCK_PAYERS fixed from
+  Stedi's mock-requests docs — verified combos (subscriber-type, sent verbatim incl. name/
+  DOB/NPI 1999999984): UHC 87726/UHC123456, Cigna 62308/23456789100, Aetna 60054/AETNA12345,
+  CMS CMS/CMS12345678. (Old UHC202649 was dependent-type; Cigna/CMS ids were wrong.) 271
+  parsing rewritten per docs: status from benefitsInformation codes 1-5/6, in-network+IND
+  preferred, deductible timeQualifier 29(remaining)>23(annual), benefitPercent str fraction.
+  WHEN KEY LANDS: put STEDI_API_KEY in .env, run `npx tsx scripts/verify-stedi.ts` — all 4
+  payers should print source=stedi. E2E on lane-3: history source=moss post-build, saved
+  note coverage block present. build+smoke green. PR #1 open (lane-3→main) — needs a merge
+  click. ⚠ OPENAI_API_KEY is INVALIDATED (leaked-key auto-revoke; generate-note silently
+  demo-fallbacks) — need fresh key, local .env only. ⚠ rebases onto rewritten main DELETE
+  .env from worktrees — re-copy it after rebasing.
