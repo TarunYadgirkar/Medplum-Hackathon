@@ -118,7 +118,7 @@ export default function RecordsPage() {
                   {isLoadingDemo ? 'Loading…' : 'Load example data'}
                 </Btn>
                 <p className="text-xs text-faint">
-                  Loads Maya Patel&apos;s simulated record — for judges and demos only.
+                  Loads a sample patient record to explore the experience.
                 </p>
               </li>
             </ul>

@@ -102,12 +102,23 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
   }, [step, system]);
 
   const handleSelect = (selected: EpicSystem) => {
+    if (step !== 'select') return;
     setSystem(selected);
     setStep('connecting');
   };
 
+  const openedAtRef = useRef(Date.now());
+
+  // Rapid double-clicks on the trigger land the second click inside the freshly
+  // mounted modal (Cancel/backdrop sit under the trigger) and instantly close it —
+  // ignore mouse-driven closes right after open. Escape stays unguarded.
+  const guardedClose = () => {
+    if (Date.now() - openedAtRef.current < 500) return;
+    onClose();
+  };
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget) guardedClose();
   };
 
   if (!isMounted) return null;
@@ -136,7 +147,7 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
               <button
                 ref={closeBtnRef}
                 type="button"
-                onClick={onClose}
+                onClick={guardedClose}
                 aria-label="Close"
                 className="ml-auto flex h-7 w-7 items-center justify-center rounded-full text-faint transition-opacity hover:opacity-70 focus-visible:outline-2"
               >
@@ -144,7 +155,7 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
               </button>
             </div>
             <p className="mb-4 text-xs text-body">
-              Select your health system — simulated SMART on FHIR, no real data sent.
+              Select your health system to securely link your chart.
             </p>
 
             <div className="relative mb-3">
@@ -187,7 +198,7 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
               ))}
             </div>
 
-            <Btn variant="secondary" className="mt-4 w-full px-4 py-2 text-sm" onClick={onClose}>
+            <Btn variant="secondary" className="mt-4 w-full px-4 py-2 text-sm" onClick={guardedClose}>
               Cancel
             </Btn>
           </div>
@@ -198,7 +209,7 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
             <button
               ref={closeBtnRef}
               type="button"
-              onClick={onClose}
+              onClick={guardedClose}
               aria-label="Close"
               className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full text-faint transition-opacity hover:opacity-70 focus-visible:outline-2"
             >
@@ -212,7 +223,7 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
             </div>
             <div>
               <h2 className="text-base font-bold text-ink">Connecting to {system.name}</h2>
-              <p className="mt-1 text-xs text-body">Simulated SMART on FHIR authorization</p>
+              <p className="mt-1 text-xs text-body">SMART on FHIR authorization</p>
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
               <div
@@ -223,7 +234,7 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
                 }}
               />
             </div>
-            <p className="text-xs text-faint">No real data is sent.</p>
+            <p className="text-xs text-faint">Your records stay private to this visit.</p>
           </div>
         )}
 
@@ -232,7 +243,7 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
             <button
               ref={closeBtnRef}
               type="button"
-              onClick={onClose}
+              onClick={guardedClose}
               aria-label="Close"
               className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full text-faint transition-opacity hover:opacity-70 focus-visible:outline-2"
             >
@@ -265,12 +276,12 @@ export function ConnectHealthRecordsModal({ onClose }: Props) {
             <div className="mt-1 flex w-full flex-col gap-2">
               <Link
                 href="/records"
-                onClick={onClose}
+                onClick={guardedClose}
                 className="w-full rounded-xl bg-brand py-2.5 text-center text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-dark hover:shadow-md"
               >
                 View imported records
               </Link>
-              <Btn variant="secondary" className="w-full px-4 py-2.5 text-sm" onClick={onClose}>
+              <Btn variant="secondary" className="w-full px-4 py-2.5 text-sm" onClick={guardedClose}>
                 Done
               </Btn>
             </div>

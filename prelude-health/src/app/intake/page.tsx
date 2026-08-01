@@ -204,14 +204,18 @@ export default function IntakePage() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink mb-1.5">Appointment type</label>
-                      <select value={appointmentType} onChange={(e) => setAppointmentType(e.target.value)}
-                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all">
-                        <option>Sick visit</option>
-                        <option>New patient visit</option>
-                        <option>Annual physical</option>
-                        <option>Follow-up</option>
-                        <option>Telehealth consult</option>
-                      </select>
+                      <input type="text" list="appointment-types" value={appointmentType}
+                        onChange={(e) => setAppointmentType(e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="Sick visit, follow-up, knee pain consult…"
+                        className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink placeholder-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 focus:bg-white transition-all" />
+                      <datalist id="appointment-types">
+                        <option value="Sick visit" />
+                        <option value="New patient visit" />
+                        <option value="Annual physical" />
+                        <option value="Follow-up" />
+                        <option value="Telehealth consult" />
+                      </datalist>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink mb-1.5">Age range <span className="text-faint font-normal">(optional)</span></label>
