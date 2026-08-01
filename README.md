@@ -19,7 +19,7 @@ Built at the YC × Medplum Agentic Healthcare Hackathon (Aug 1, 2026).
 1. **Land** on the home page — start a check-in, open your Med Card, or view your Health Records.
 2. **Intake form** — name, appointment type (select + free-text "Other"), insurance
    (carrier → real plan names, e.g. UHC Choice Plus, Cigna OAP), and an **urgency slider**
-   (30-sec demo / 1 / 3 / 5 min) that drives the agent's pacing and reply length.
+   (15 sec (one question) / 1 / 3 / 5 min) that drives the agent's pacing and reply length.
    Or **skip the form entirely** — "just talk to Prelude" and the agent collects your name
    and visit type in conversation.
 3. **Consent screen** — explicit consent + emergency language (911/988).
@@ -94,7 +94,7 @@ keys** (demo transcript → note → dashboard), proven by `scripts/smoke.sh`.
 
 ## Features
 
-- **Urgency slider** — 30-sec demo / 1 / 3 / 5 min; drives agent pacing and reply length on
+- **Urgency slider** — 15 sec (one question) / 1 / 3 / 5 min; drives agent pacing and reply length on
   both voice engines. The agent can also **end the call itself** (`end_checkin` function)
   after a recap and goodbye.
 - **Voice-first skip-form path** — no form needed; the agent collects identity in conversation.
@@ -156,7 +156,7 @@ keyword history, synthetic eligibility, demo note).
 
 ## Demo script (15 seconds to wow)
 
-1. `/intake` → set the urgency slider to **30-sec demo** → start the call.
+1. `/intake` → set the urgency slider to **15 sec** → start the call.
 2. Ask one question: *"I have a rash on my arm — how much will this visit cost?"*
    Watch the transcript chart live, the agent pull your history mid-sentence, and answer
    with your plan's copay. The agent recaps and ends the call itself.
