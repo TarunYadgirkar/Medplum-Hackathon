@@ -194,7 +194,103 @@ children), `BulletList` (accent dot + text + italic empty string), micro-labels
 
 ---
 
-## 5. Shared component inventory (design-system surface)
+## 5. Stedi coverage bot — "Ask about coverage" (NEW)
+
+Purpose: let anyone check insurance coverage/cost WITHOUT doing a voice call — a
+guided, chat-style widget powered by the existing Stedi eligibility check. Grounded
+UI, not freeform chat: every exchange is chips/inputs → one API call → a result card.
+
+Placement: floating **launcher button** (docked corner, above the fold on mobile) on
+the landing page, the intake "Done" step, and the note review page. Opens a
+**slide-over panel** (full-screen sheet on mobile). Closes via ✕ or scrim tap.
+
+Panel anatomy, top to bottom:
+1. **Header**: bot identity ("Coverage Assistant"), "Powered by Stedi" attribution,
+   a mode tag ("test mode" / "synthetic data"), close button.
+2. **Message thread** (scrollable): bot bubbles + user bubbles + inline cards.
+3. **Composer row**: context-dependent — chip rows for guided steps, a text input
+   only where free entry is needed (member ID).
+
+Guided conversation flow (each step is a bot bubble + a chip row):
+1. Greeting bubble + one-line disclaimer microcopy (estimates, not a guarantee of
+   coverage — must remain).
+2. "Who's your insurer?" → **payer chips**: UnitedHealthcare / Cigna / Aetna /
+   Medicare (from the mock-payer set).
+3. "Member ID?" → text input pre-filled with the payer's demo member ID +
+   "use demo ID" chip.
+4. "What kind of visit?" → **care-level chips**: Telehealth / Primary care /
+   Urgent care / Emergency room.
+5. **Checking state**: typing/working indicator bubble ("Checking with {payer}…").
+6. **Result**: inline **coverage card** (REUSE the coverage card component: payer +
+   plan status, copay OR est. cost range, deductible remaining, source micro-pill) +
+   the `spoken_summary` sentence as a bot bubble.
+7. **Follow-up chips**: "Check another visit type" (loops to step 4, keeps payer),
+   "Different insurer" (loops to step 2), "Start voice check-in →" (deep-links
+   `/intake` — the conversion moment).
+
+States: closed (launcher only), open-idle, awaiting-input (chips highlighted),
+checking (typing indicator), result, error/fallback (bot bubble noting synthetic
+estimate was used instead — never a dead end). Thread persists while the panel
+stays open; reopening may reset.
+
+Data: existing `POST /api/eligibility` contract only ({payerKey, memberId,
+careLevel} → CoverageSummary). No new API needed.
+
+---
+
+## 6. Patient chart — timeline / calendar (NEW)
+
+Purpose: the provider-side "this is a real FHIR record" moment — one patient's full
+history as a browsable chart. Suggested route: `/dashboard/patient/[patientId]`,
+entered by clicking the patient's name in the queue and from a link in the note
+review header.
+
+Regions, top to bottom:
+1. **Nav**: provider nav shell + "‹ Queue" back link.
+2. **Patient header card**: identity block (name, age range, appointment type),
+   summary chips (current risk badge, latest note status, visit count, last-seen
+   date), actions: primary "Open latest note →", secondary "New intake".
+3. **View toggle**: segmented control — **Timeline | Calendar** (Timeline default).
+4. **Filter chip row** (multi-select, horizontally scrollable on mobile): All /
+   Visits / Notes / Medications / Allergies / Coverage checks. Active-filter state
+   must be obvious; counts per type optional.
+
+### Timeline view (default — the demo hero here)
+- Vertical spine, **newest first**, entries grouped under month labels; a "Today"
+  marker at the top when applicable.
+- **Timeline entry** anatomy: date node on the spine + event card containing:
+  event-type icon tile, title (e.g. "Sick visit — itchy rash"), one-line summary,
+  contextual badges (risk level, note status), and a trailing action when linkable
+  ("Open note →" for notes/visits).
+- Event types needing distinct-but-related treatments: **Visit/Encounter**,
+  **AI note**, **Medication**, **Allergy** (persistent facts — consider pinning
+  allergies above the timeline as an always-visible strip), **Coverage check**,
+  **Risk flag**.
+- Entry cards animate in with stagger on load/filter change.
+
+### Calendar view
+- Month grid with weekday header row; prev / next month + "jump to today" controls;
+  month-year label.
+- **Day cell**: date numeral, up to 3 event dots (dot per event type) + "+N"
+  overflow; today emphasized; out-of-month days muted; days with events are
+  clickable/focusable.
+- Selecting a day opens a **day detail list** (side panel on desktop, sheet or
+  below-grid list on mobile) reusing the SAME event cards as the timeline.
+- Keyboard: arrow-key day navigation is the accessibility bar.
+
+Page states: loading skeleton (header + 3 ghost entries), empty ("No history yet
+for this patient" + "Start an intake →"), single-event, dense (10+ events — spine
+must stay readable).
+
+Data note: events derive from the patient's FHIR record (Encounters, Compositions/
+notes, MedicationRequest, AllergyIntolerance — lane-2 already builds these for Moss
+history). OPEN ASK to Lane 2: a `GET /api/patients/[id]/events` endpoint; until it
+exists the page can assemble from `/api/patients` + `/api/notes/[id]` with the demo
+history entries.
+
+---
+
+## 7. Shared component inventory (design-system surface)
 
 Primitives the design language must define:
 - **Buttons**: primary (brand), secondary (surface+border), soft-destructive,
@@ -211,3 +307,14 @@ Primitives the design language must define:
 - **Empty/loading/error** patterns (spinner, folder empty state, error banner).
 - Icons: currently inline SVG (users, clock, alert-triangle, check, plus, trash) +
   a few emoji tiles.
+
+New primitives required by sections 5–6:
+- **Chat bubble** pair (bot vs user) + **typing indicator**.
+- **Chip** (quick-reply / filter): default, selected, multi-select states.
+- **Floating launcher button** + **slide-over panel / mobile sheet** (with scrim).
+- **Segmented control** (2 options).
+- **Timeline spine + date node + event card** (6 event-type treatments).
+- **Calendar month grid + day cell** (event dots, today, muted, overflow count)
+  + **day detail list**.
+- **Pinned facts strip** (allergies).
+- **Loading skeleton** pattern.
