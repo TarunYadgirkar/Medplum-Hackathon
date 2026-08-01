@@ -8,6 +8,7 @@
 // is that circle.
 
 import { useEffect, useRef } from 'react';
+import { ensureMic, readLevel } from '@/lib/mic-level';
 
 interface VoiceOrbProps {
   /** Main orb diameter in px (design: 220 landing, 250 call screen) */
@@ -18,16 +19,19 @@ interface VoiceOrbProps {
   intensity?: number;
   /** When true, settle into a gentle low-energy breathe (e.g. call ended) */
   idle?: boolean;
+  /** When true, the orb speeds up its animation while the cursor hovers it */
+  hoverInteractive?: boolean;
   className?: string;
 }
 
 interface Ripple { born: number; amp: number }
 
-export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle = false, className = '' }: VoiceOrbProps) {
+export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle = false, hoverInteractive = false, className = '' }: VoiceOrbProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const modeRef = useRef(mode);
   const idleRef = useRef(idle);
   const intensityRef = useRef(intensity);
+  const hoverRef = useRef(false);
   modeRef.current = mode;
   idleRef.current = idle;
   intensityRef.current = intensity;
@@ -51,47 +55,15 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
     const hist = new Array<number>(90).fill(0.2);
     let histAt = 0;
 
-    let stream: MediaStream | null = null;
-    let ac: AudioContext | null = null;
-    let analyser: AnalyserNode | null = null;
-    let buf: Uint8Array<ArrayBuffer> | null = null;
+    // Shared mic source ('@/lib/mic-level') — one stream feeds the orb AND the
+    // visualizer bars. readLevel() → null means mic unavailable → sim fallback.
     let micOn = false;
-    let micBusy = false;
-
     async function initMic() {
-      if (micBusy || micOn || modeRef.current !== 'mic') return;
-      micBusy = true;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-        });
-        const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        ac = new AC();
-        if (ac.state === 'suspended') await ac.resume();
-        analyser = ac.createAnalyser();
-        analyser.fftSize = 1024;
-        analyser.smoothingTimeConstant = 0.4;
-        ac.createMediaStreamSource(stream).connect(analyser);
-        buf = new Uint8Array(new ArrayBuffer(analyser.fftSize));
-        micOn = true;
-      } catch {
-        micOn = false; // sim fallback keeps the orb alive
-      }
-      micBusy = false;
+      if (modeRef.current !== 'mic') return;
+      micOn = await ensureMic();
     }
     const retryMic = () => { if (!micOn) void initMic(); };
-
-    function micLevel(): number | null {
-      if (!analyser || !buf) return null;
-      analyser.getByteTimeDomainData(buf);
-      let sum = 0;
-      for (let i = 0; i < buf.length; i++) {
-        const d = (buf[i] - 128) / 128;
-        sum += d * d;
-      }
-      const rms = Math.sqrt(sum / buf.length);
-      return Math.max(0.05, Math.min(1, Math.pow(rms * 8, 0.8)));
-    }
+    const micLevel = (): number | null => readLevel();
 
     /* speech-like envelope: slow breath + syllable pulses, gated into phrases */
     function env(tt: number): number {
@@ -156,8 +128,9 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
     }
 
     function tick() {
-      t += 1 / 60;
-      const gain = (intensityRef.current ?? 1) * (idleRef.current ? 0.3 : 1);
+      const speedMul = hoverRef.current ? 1.7 : 1;
+      t += speedMul / 60;
+      const gain = (intensityRef.current ?? 1) * (idleRef.current ? 0.3 : 1) * (hoverRef.current ? 1.15 : 1);
       const live = micOn && !idleRef.current ? micLevel() : null;
       const raw = Math.min(1, (live == null ? env(t) : live) * gain);
       histAt = (histAt + 1) % hist.length;
@@ -213,13 +186,23 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
     }
     raf = requestAnimationFrame(tick);
 
+    const onEnter = () => { hoverRef.current = true; };
+    const onLeave = () => { hoverRef.current = false; };
+    if (hoverInteractive) {
+      root.addEventListener('pointerenter', onEnter);
+      root.addEventListener('pointerleave', onLeave);
+    }
+
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener('pointerdown', retryMic);
-      if (stream) stream.getTracks().forEach((tr) => tr.stop());
-      if (ac) void ac.close();
+      if (hoverInteractive) {
+        root.removeEventListener('pointerenter', onEnter);
+        root.removeEventListener('pointerleave', onLeave);
+      }
+      // shared mic stream stays alive for other consumers (bars, next mount)
     };
-  }, []);
+  }, [hoverInteractive]);
 
   const k = size / 220; // design ratios are set at the 220px landing orb
   const px = (n: number) => `${Math.round(n * k)}px`;
