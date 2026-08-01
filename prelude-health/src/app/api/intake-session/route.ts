@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createIntake } from '@/lib/store';
 import { demoHistoryDocs, indexPatientHistory } from '@/lib/moss';
+import { buildFhirHistoryDocs } from '@/lib/fhir-history';
 
 const Schema = z.object({
   patientName: z.string().min(1).max(200),
@@ -24,8 +25,9 @@ export async function POST(req: NextRequest) {
     ageRange,
   });
 
-  // Seed demo history (in production: built from the patient's FHIR record).
-  await indexPatientHistory(patientId, demoHistoryDocs(patientName));
+  // Real history from the returning patient's FHIR record; demo docs when new/keyless.
+  const fhirDocs = await buildFhirHistoryDocs(patientName, patientId);
+  await indexPatientHistory(patientId, fhirDocs.length ? fhirDocs : demoHistoryDocs(patientName));
 
   return NextResponse.json({ patientId, encounterId });
 }

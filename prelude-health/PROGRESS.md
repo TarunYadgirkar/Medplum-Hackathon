@@ -79,3 +79,16 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
   npm run build + smoke.sh green. Lane 2 core tasks (verify Medplum, listPatients, seed) ALL DONE.
   Before recording video: run `npx tsx scripts/cleanup-smoke.ts` (with .env loaded) to purge
   "Smoke Test" rows from Medplum — 3 currently on the dashboard.
+- [11:25] [lane-2] STRETCH DONE: history docs now built from the patient's REAL FHIR record.
+  New file src/lib/fhir-history.ts (lane-2 owned — moss.ts untouched, Lane 3 unaffected):
+  matches a returning patient by name (excluding the just-created Patient, skipping empty
+  same-name leftovers), pulls prior Compositions + AllergyIntolerance + MedicationRequest.
+  intake-session route uses FHIR docs when non-empty, demo docs otherwise (keyless intact).
+  Seeded patients now have real allergies/meds in Medplum (seed-demo.ts extended).
+  VERIFIED LIVE: intake as "Robert Alan Chen" → /api/history returns "Active medications:
+  Lisinopril — 10mg once daily; Metformin — 1000mg twice daily" from Medplum.
+  DEMO TIP: check in with a seeded name (Robert Alan Chen / Marcus Whitfield / Priya Anand)
+  and the agent recalls their real chart. build + smoke green.
+- [11:25] [lane-2] NOTE for Lane 3: /api/history "Moss query failed, using keyword fallback:
+  TypeError: (results || []).map is not a function" — live Moss query response shape differs
+  from expected array. Your fix, in moss.ts queryPatientHistory.

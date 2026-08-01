@@ -10,6 +10,8 @@ interface DemoPatient {
   transcript: string;
   targetStatus: 'urgent_review' | 'ai_draft' | 'reviewed';
   targetRisk: 'high' | 'low' | 'medium';
+  allergies?: { substance: string; reaction: string }[];
+  medications?: { name: string; dosage: string }[];
 }
 
 const PATIENTS: DemoPatient[] = [
@@ -19,6 +21,8 @@ const PATIENTS: DemoPatient[] = [
     appointmentType: 'Urgent visit',
     targetStatus: 'urgent_review',
     targetRisk: 'high',
+    allergies: [{ substance: 'Penicillin', reaction: 'rash' }],
+    medications: [{ name: 'Lisinopril', dosage: '20mg once daily' }],
     transcript: `Agent: Hi Marcus, thanks for calling in. What brings you in today?
 Patient: I've had this tightness in my chest since yesterday afternoon, and I'm getting short of breath walking up stairs.
 Agent: I'm sorry to hear that. Can you describe the chest tightness — is it a pressure, a sharp pain, or something else?
@@ -49,6 +53,7 @@ Agent: Please do that immediately. I'm documenting everything you've told me for
     appointmentType: 'Annual physical',
     targetStatus: 'ai_draft',
     targetRisk: 'low',
+    medications: [{ name: 'Cetirizine (Zyrtec)', dosage: '10mg as needed for allergies' }],
     transcript: `Agent: Hi Priya, welcome in. What's the reason for today's visit?
 Patient: Just my annual physical, keeping up with my yearly checkup.
 Agent: Great, any specific concerns you want to bring up while we're at it?
@@ -81,6 +86,11 @@ Agent: Perfect, this all sounds routine and low risk. We'll get your vitals and 
     appointmentType: 'Follow-up visit',
     targetStatus: 'reviewed',
     targetRisk: 'medium',
+    allergies: [{ substance: 'Sulfamethoxazole', reaction: 'hives' }],
+    medications: [
+      { name: 'Metformin', dosage: '1000mg twice daily' },
+      { name: 'Lisinopril', dosage: '10mg once daily' },
+    ],
     transcript: `Agent: Hi Robert, good to see you're checking in. What's today's follow-up about?
 Patient: Following up on my type 2 diabetes, and I need a refill on my metformin.
 Agent: How have your blood sugar readings been since your last visit?
@@ -112,6 +122,57 @@ function assertOk(res: Response, body: unknown, label: string): void {
   if (!res.ok) {
     console.error(`FAILED ${label}: ${res.status} ${JSON.stringify(body)}`);
     process.exit(1);
+  }
+}
+
+// Allergies + active meds written straight to Medplum so buildFhirHistoryDocs
+// has real clinical background to retrieve when the same name checks in again.
+async function seedClinicalBackground(patientId: string, patient: DemoPatient): Promise<void> {
+  if (!process.env.MEDPLUM_CLIENT_ID || !process.env.MEDPLUM_CLIENT_SECRET) {
+    console.log('MEDPLUM_CLIENT_ID/SECRET not set — skipping allergy/medication seeding');
+    return;
+  }
+  const medplumBase = process.env.MEDPLUM_BASE_URL || 'https://api.medplum.com/';
+  const tokenRes = await fetch(`${medplumBase}oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: process.env.MEDPLUM_CLIENT_ID,
+      client_secret: process.env.MEDPLUM_CLIENT_SECRET,
+    }),
+  });
+  const tokenBody = await tokenRes.json();
+  assertOk(tokenRes, tokenBody, 'medplum token');
+  const create = async (resource: Record<string, unknown>) => {
+    const res = await fetch(`${medplumBase}fhir/R4/${resource.resourceType}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenBody.access_token}`, 'Content-Type': 'application/fhir+json' },
+      body: JSON.stringify(resource),
+    });
+    const body = await res.json();
+    assertOk(res, body, `create ${resource.resourceType}`);
+    console.log(`created ${resource.resourceType}/${body.id}`);
+  };
+
+  for (const allergy of patient.allergies || []) {
+    await create({
+      resourceType: 'AllergyIntolerance',
+      clinicalStatus: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical', code: 'active' }] },
+      patient: { reference: `Patient/${patientId}`, display: patient.name },
+      code: { text: allergy.substance },
+      reaction: [{ manifestation: [{ text: allergy.reaction }] }],
+    });
+  }
+  for (const med of patient.medications || []) {
+    await create({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: `Patient/${patientId}`, display: patient.name },
+      medicationCodeableConcept: { text: med.name },
+      dosageInstruction: [{ text: med.dosage }],
+    });
   }
 }
 
@@ -155,6 +216,8 @@ async function seedPatient(patient: DemoPatient): Promise<void> {
   });
   const patchBody = await patchRes.json();
   assertOk(patchRes, patchBody, 'notes PATCH');
+
+  await seedClinicalBackground(patientId, patient);
 
   const verifyRes = await fetch(`${BASE_URL}/api/notes/${noteId}`);
   const verifyBody = await verifyRes.json();
