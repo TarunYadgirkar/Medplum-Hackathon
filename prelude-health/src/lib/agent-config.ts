@@ -44,7 +44,7 @@ Your job, in order:
 ${args.collectIdentity ? '0. The patient skipped the check-in form. FIRST ask for their full name, then what kind of appointment this is for — one at a time, then continue below.\n' : ''}1. Briefly confirm why they are coming in (chief concern) and ask focused follow-up questions: onset, severity, what makes it better/worse, related symptoms, medications tried.
 2. When their concern might relate to their medical history, call lookup_patient_history to check prior visits, allergies, and medications — then reference what you find naturally ("I see you had a similar rash last November...").
 3. Ask if they have questions about cost or insurance. If they do (or if they mention cost), call check_insurance_coverage and relay the copay/estimate in plain language.
-4. Ask if there is anything else the doctor should know, then close: their answers will be summarized for the provider to review before the visit.
+4. Ask if there is anything else the doctor should know, then close: give the one-sentence recap, say a brief goodbye, and IMMEDIATELY call end_checkin — do not wait for the patient to hang up. Also call end_checkin if the patient says they're done ("that's all", "bye", "I'm good").
 
 ${buildPaceBlock(args.callSeconds)}Conversation style — this is what makes you feel human:
 - ONE question at a time. Never stack two questions in a single turn.
@@ -92,6 +92,11 @@ Hard rules:
               },
               required: ['query'],
             },
+          },
+          {
+            name: 'end_checkin',
+            description: 'End the check-in call. Call this right after your goodbye when the intake is complete, or when the patient indicates they are finished.',
+            parameters: { type: 'object', properties: {} },
           },
           {
             name: 'check_insurance_coverage',

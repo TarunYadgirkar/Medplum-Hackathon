@@ -88,6 +88,10 @@ export function useGrokVoice() {
 
   const runFunction = useCallback(async (name: string, args: Record<string, unknown>): Promise<string> => {
     try {
+      if (name === 'end_checkin') {
+        setTimeout(() => window.dispatchEvent(new Event('prelude:call-complete')), 4000);
+        return 'Check-in ending now.';
+      }
       if (name === 'check_insurance_coverage') {
         const res = await fetch('/api/eligibility', {
           method: 'POST',
@@ -160,6 +164,12 @@ export function useGrokVoice() {
                   properties: { query: { type: 'string', description: 'What to look for' } },
                   required: ['query'],
                 },
+              },
+              {
+                type: 'function',
+                name: 'end_checkin',
+                description: 'End the check-in call right after your goodbye when the intake is complete, or when the patient says they are done.',
+                parameters: { type: 'object', properties: {} },
               },
               {
                 type: 'function',

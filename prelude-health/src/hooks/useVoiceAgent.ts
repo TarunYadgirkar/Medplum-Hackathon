@@ -47,6 +47,7 @@ export function useVoiceAgent() {
   const micMutedRef = useRef(false);
   const speakerMutedRef = useRef(false);
   const agentSpeakingRef = useRef(false);
+  const endAfterSpeechRef = useRef(false);
   const masterGainRef = useRef<GainNode | null>(null);
 
   const toggleMic = useCallback(() => {
@@ -115,7 +116,14 @@ export function useVoiceAgent() {
 
       let content = 'Function not available.';
       try {
-        if (name === 'check_insurance_coverage') {
+        if (name === 'end_checkin') {
+          endAfterSpeechRef.current = true;
+          // Safety net if AgentAudioDone never arrives.
+          setTimeout(() => {
+            if (endAfterSpeechRef.current) window.dispatchEvent(new Event('prelude:call-complete'));
+          }, 7000);
+          content = 'Check-in ending now.';
+        } else if (name === 'check_insurance_coverage') {
           const res = await fetch('/api/eligibility', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -272,6 +280,11 @@ export function useVoiceAgent() {
             break;
           case 'AgentAudioDone':
             agentSpeakingRef.current = false;
+            if (endAfterSpeechRef.current) {
+              endAfterSpeechRef.current = false;
+              // Let the tail of the goodbye audio finish playing out.
+              setTimeout(() => window.dispatchEvent(new Event('prelude:call-complete')), 1800);
+            }
             setState('active');
             break;
           case 'FunctionCallRequest':

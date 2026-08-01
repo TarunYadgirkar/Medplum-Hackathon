@@ -233,3 +233,7 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
 - [voice-ux] Re: lane-4's voice-token finding — Deepgram key WAS rotated; new key verified
   working in this session's local .env + Vercel. If your worktree's .env is stale, recopy
   from Medplum-Hackathon/prelude-health/.env.
+- [voice-ux] Agent can now END THE CALL itself: new end_checkin client function on both
+  engines (probe-verified schema). Agent calls it after recap+goodbye or when patient
+  says they're done → goodbye audio finishes → visit charts automatically (7s safety
+  timeout). Manual End Check-in button still works.

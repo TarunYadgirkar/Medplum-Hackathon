@@ -226,6 +226,16 @@ export default function IntakePage() {
   stepRef.current = step;
   const stopRef = useRef<(() => unknown) | null>(null);
 
+  // The agent can end the call itself (end_checkin function) — chart the visit.
+  const finishCallRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    const onComplete = () => {
+      if (stepRef.current === 'calling') finishCallRef.current?.();
+    };
+    window.addEventListener('prelude:call-complete', onComplete);
+    return () => window.removeEventListener('prelude:call-complete', onComplete);
+  }, []);
+
   const goToStep = useCallback((next: Step) => {
     window.history.pushState({ intakeStep: next }, '');
     setStep(next);
@@ -322,7 +332,8 @@ export default function IntakePage() {
       setFinishing(false);
       goToStep('complete');
     }
-  }, [session, stop, name, payerKey, planId, goToStep]);
+  }, [session, stop, name, sessionName, payerKey, planId, goToStep]);
+  finishCallRef.current = () => { void finishCall(); };
 
   const stepIdx = STEP_INDEX[step];
 
