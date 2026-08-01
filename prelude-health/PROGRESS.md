@@ -103,3 +103,7 @@ completed task or blocker. Format: `[time] [lane/session] what happened / what's
 - [12:15] [lane-2] Rerun `npx tsx scripts/cleanup-smoke.ts` right before video — smoke runs
   since the last purge left new "Smoke Test" rows; also "Test Patient"/"E2E Verify"/"Moss Test"
   junk rows can now be removed straight from the dashboard delete button.
+- [12:25] [lane-2] Dashboard purged to camera-ready state: ONLY the 3 seeded demo patients
+  remain (Marcus urgent_review/high, Priya ai_draft/low, Robert reviewed/medium). All test
+  junk deleted from Medplum. If any lane runs smoke.sh again, rerun cleanup-smoke.ts after.
+  Lane 2 session ended.
