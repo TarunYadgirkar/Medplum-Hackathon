@@ -38,7 +38,10 @@ semantically relevant entries in sub-10ms — fast enough for the agent to say "
 similar rash last November" without stalling the conversation.
 
 ## Code repo link
-https://github.com/TarunYadgirkar/prelude-health  ← create this repo and push
+https://github.com/TarunYadgirkar/Medplum-Hackathon
+
+## Live demo link
+https://prelude-health.vercel.app
 
 ## Demo video script (record by ~4:00 PM, upload to YouTube, blast link for views)
 1. (0:00) Cold open on the landing page. "Every doctor visit starts with ten wasted minutes
@@ -56,8 +59,8 @@ https://github.com/TarunYadgirkar/prelude-health  ← create this repo and push
    Moss stack, in one day. The visit starts before the doctor walks in."
 
 ## Checklist before submitting
-- [ ] Push repo to GitHub (fresh repo, today's commits)
-- [ ] Deploy to Vercel (set env vars!) — or demo locally
+- [x] Push repo to GitHub (fresh repo, today's commits)
+- [x] Deploy to Vercel (set env vars!) — or demo locally
 - [ ] Record + upload YouTube video, set to Public
 - [ ] Share video link in group chats (form asks for VIEW COUNT)
 - [ ] One submission per team, by 5:00 PM
