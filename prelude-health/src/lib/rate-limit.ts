@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 30;
-// Above this many tracked clients, sweep out expired entries so a burst of
-// unique IPs cannot grow the map without bound.
+// Hard ceiling on tracked clients so a burst of unique IPs cannot grow the map
+// without bound.
 const SWEEP_THRESHOLD = 10_000;
 
 // Per-instance, in-memory sliding window: Vercel runs several serverless
@@ -13,10 +13,17 @@ const SWEEP_THRESHOLD = 10_000;
 // store is the fix if this ever needs to hold a real limit.
 const hits = new Map<string, number[]>();
 
+// Only platform-set headers are trustworthy. A client can prepend whatever it
+// likes to x-forwarded-for, so the leftmost hop is attacker-controlled; the
+// rightmost hop is the one the proxy appended. Locally no proxy header exists
+// at all, so every dev request shares the 'unknown' bucket.
 export function clientIp(req: NextRequest): string {
+  const vercelIp = req.headers.get('x-vercel-forwarded-for') ?? req.headers.get('x-real-ip');
+  if (vercelIp) return vercelIp.trim();
   const forwarded = req.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return req.headers.get('x-real-ip') ?? 'unknown';
+  if (!forwarded) return 'unknown';
+  const hops = forwarded.split(',');
+  return hops[hops.length - 1].trim() || 'unknown';
 }
 
 // Returns a 429 to send back when the caller is over budget, else null.
@@ -35,7 +42,12 @@ export function rateLimit(req: NextRequest, scope: string): NextResponse | null 
   }
 
   hits.set(key, [...recent, now]);
-  if (hits.size > SWEEP_THRESHOLD) sweepExpired(now);
+  if (hits.size > SWEEP_THRESHOLD) {
+    sweepExpired(now);
+    // Still crowded means the keys are live, so someone is minting a new one per
+    // request. Drop the map rather than let an instance grow without bound.
+    if (hits.size > SWEEP_THRESHOLD) hits.clear();
+  }
   return null;
 }
 
