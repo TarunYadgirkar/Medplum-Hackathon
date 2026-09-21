@@ -39,8 +39,9 @@ const TABS: { id: RecordTab; label: string }[] = [
 
 type Snapshot = EpicImportState | null | undefined;
 
+// undefined until the client has read localStorage, so the empty state never
+// flashes during hydration.
 const readEpicImport = (): Snapshot => getEpicImport();
-const noEpicImportYet = (): Snapshot => undefined;
 
 // The tab lives in the URL so back/forward/refresh/share behave like a real
 // site. The server render has no query string, so it always starts on "all".
@@ -53,7 +54,7 @@ const EMERGENCY_NOTE =
   'Prelude is a pre-visit check-in tool, not a diagnosis system. In an emergency call 911, or 988 for mental health crises.';
 
 export default function RecordsPage() {
-  const [importState] = useClientValue(readEpicImport, noEpicImportYet(), RECORDS_CHANGED_EVENT);
+  const [importState] = useClientValue(readEpicImport, undefined, RECORDS_CHANGED_EVENT);
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [activeTab, refreshTab] = useClientValue(readTabFromUrl, 'all', 'popstate');
 
