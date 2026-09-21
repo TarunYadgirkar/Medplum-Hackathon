@@ -2,11 +2,13 @@
 // A new Patient resource is created for every intake, so "history" means the
 // most recent PRIOR patient with the same name (returning-patient match):
 // their Compositions (past visit notes), AllergyIntolerances, and
-// MedicationRequests. Returns [] when Medplum is unconfigured or the patient
-// is new — callers fall back to demo docs so keyless mode keeps working.
+// MedicationRequests, plus the symptoms they logged themselves on /timeline.
+// Returns [] when Medplum is unconfigured or the patient is new — callers fall
+// back to demo docs so keyless mode keeps working.
 
 import type { AllergyIntolerance, Composition, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { NOTE_JSON_EXT, getMedplum, medplumConfigured } from './medplum';
+import { daysAgoLabel, listSymptoms } from './symptoms';
 import type { Note } from '@/types';
 
 interface HistoryDoc {
@@ -49,6 +51,9 @@ async function docsForPatient(patientId: string, patientName: string): Promise<H
     ]);
 
     const docs: HistoryDoc[] = [];
+
+    const symptomDoc = await symptomLogDoc(patientId, patientName);
+    if (symptomDoc) docs.push(symptomDoc);
 
     for (const comp of compositions) {
       const noteJson = comp.extension?.find((e) => e.url === NOTE_JSON_EXT)?.valueString;
@@ -93,4 +98,25 @@ async function docsForPatient(patientId: string, patientName: string): Promise<H
 
     return docs;
   }
+}
+
+// Patient-logged symptoms, phrased with how long ago each one started so the
+// agent can say "you logged a headache three days ago" without doing date math.
+const SYMPTOM_WINDOW_DAYS = 30;
+const SYMPTOM_LIMIT = 15;
+
+async function symptomLogDoc(patientId: string, patientName: string): Promise<HistoryDoc | null> {
+  const cutoff = Date.now() - SYMPTOM_WINDOW_DAYS * 86_400_000;
+  const recent = (await listSymptoms(patientId))
+    .filter((s) => new Date(s.onset).getTime() >= cutoff)
+    .slice(0, SYMPTOM_LIMIT);
+  if (!recent.length) return null;
+  const lines = recent.map(
+    (s) => `${s.text} (severity ${s.severity} of 10, started ${daysAgoLabel(s.onset)} on ${s.onset.slice(0, 10)})`
+  );
+  return {
+    id: 'symptom-log',
+    text: `${patientName} — Symptoms the patient logged themselves in the last ${SYMPTOM_WINDOW_DAYS} days: ${lines.join('; ')}.`,
+    metadata: { type: 'symptom-log' },
+  };
 }

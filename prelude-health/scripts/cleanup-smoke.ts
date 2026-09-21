@@ -39,7 +39,7 @@ async function main() {
   console.log(`Found ${patients.length} Smoke Test patient(s)`);
 
   for (const p of patients) {
-    for (const type of ['RiskAssessment', 'Composition', 'DocumentReference', 'Encounter']) {
+    for (const type of ['Observation', 'RiskAssessment', 'Composition', 'DocumentReference', 'Encounter']) {
       const related = await fhir(`${type}?subject=Patient/${p.id}&_count=100`);
       for (const e of related?.entry || []) {
         await fhir(`${type}/${e.resource.id}`, { method: 'DELETE' });

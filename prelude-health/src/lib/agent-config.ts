@@ -3,7 +3,9 @@
 // One WebSocket handles STT (nova-3-medical) + LLM + TTS (Aura-2).
 // Two client-side functions let the agent act mid-conversation:
 //   check_insurance_coverage → /api/eligibility (Stedi test mode)
-//   lookup_patient_history   → /api/history (Moss semantic search)
+//   lookup_patient_history   → /api/history (Moss semantic search over prior
+//                              visits, allergies, meds, and the symptoms the
+//                              patient logged themselves on /timeline)
 
 import { sanitizeField } from '@/lib/medcard';
 
@@ -45,7 +47,7 @@ You are speaking with ${patientName}, who has a "${appointmentType}" appointment
 
 Your job, in order:
 ${args.collectIdentity ? '0. The patient skipped the check-in form. FIRST ask for their full name, then what kind of appointment this is for — one at a time, then continue below.\n' : ''}1. Briefly confirm why they are coming in (chief concern) and ask focused follow-up questions: onset, severity, what makes it better/worse, related symptoms, medications tried.
-2. When their concern might relate to their medical history, call lookup_patient_history to check prior visits, allergies, and medications — then reference what you find naturally ("I see you had a similar rash last November...").
+2. When their concern might relate to their medical history, call lookup_patient_history to check prior visits, allergies, medications, and symptoms they logged themselves between visits — then reference what you find naturally ("I see you logged a headache three days ago...").
 3. Ask if they have questions about cost or insurance. If they do (or if they mention cost), call check_insurance_coverage and relay the copay/estimate in plain language.
 4. Ask if there is anything else the doctor should know, then close: give the one-sentence recap, say a brief goodbye, and IMMEDIATELY call end_checkin — do not wait for the patient to hang up. Also call end_checkin if the patient says they're done ("that's all", "bye", "I'm good").
 
@@ -87,11 +89,11 @@ Hard rules:
         functions: [
           {
             name: 'lookup_patient_history',
-            description: "Semantic search over the patient's medical history (prior visits, allergies, medications, family history). Call whenever history could be relevant to what the patient just said.",
+            description: "Semantic search over the patient's medical history: prior visits, allergies, medications, family history, and any symptoms they logged themselves between visits (each with a severity and how long ago it started). Call whenever history could be relevant to what the patient just said, and whenever they mention a symptom that might already be on their log.",
             parameters: {
               type: 'object',
               properties: {
-                query: { type: 'string', description: 'What to look for, e.g. "previous rash treatment" or "medication allergies"' },
+                query: { type: 'string', description: 'What to look for, e.g. "previous rash treatment", "medication allergies", or "recent logged symptoms"' },
               },
               required: ['query'],
             },

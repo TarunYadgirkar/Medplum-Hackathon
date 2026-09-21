@@ -18,8 +18,11 @@ on the sponsor stack, from a fresh repo.
 **Medplum — the system of record.** Every check-in becomes real FHIR: a `Patient`, an
 `Encounter` (opened when the call starts, finished when it ends), a `DocumentReference`
 holding the transcript, a `Composition` with SOAP sections for the AI draft note, and a
-`RiskAssessment` for the safety screen. The provider dashboard reads its queue straight from
-Medplum search. (`src/lib/medplum.ts`, `src/lib/store.ts`)
+`RiskAssessment` for the safety screen. Symptoms the patient logs between visits on
+`/timeline` are written as `Observation` resources (category `survey`, severity in an
+`Observation.component`), so the log lives in the chart instead of in browser storage. The
+provider dashboard reads its queue straight from Medplum search.
+(`src/lib/medplum.ts`, `src/lib/store.ts`, `src/lib/symptoms.ts`)
 
 **Deepgram — the whole voice loop.** One Voice Agent WebSocket runs STT with
 **nova-3-medical** (medical vocabulary), the reasoning LLM, and **Aura-2** TTS, with
@@ -33,9 +36,10 @@ copay/deductible back in plain language; the same coverage summary lands on the 
 (`src/lib/stedi.ts`)
 
 **Moss — context at conversation speed.** The patient's history (prior visits, allergies,
-meds) is indexed in Moss at check-in start; when the patient mentions something, the agent
+meds, and their own symptom log) is indexed in Moss at check-in start; when the patient mentions something, the agent
 semantically retrieves the relevant history in sub-10ms — fast enough to say *"I see you had a
-similar rash last November"* without stalling. (`src/lib/moss.ts`)
+similar rash last November"* or *"you logged a headache three days ago"* without stalling.
+(`src/lib/moss.ts`, `src/lib/fhir-history.ts`)
 
 ## Run it
 

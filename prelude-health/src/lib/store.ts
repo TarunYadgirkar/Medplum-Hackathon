@@ -2,6 +2,7 @@
 //   patient        → Patient
 //   intake call    → Encounter (+ DocumentReference holding the transcript)
 //   AI note        → Composition (SOAP sections) + RiskAssessment
+//   logged symptom → Observation (see symptoms.ts)
 // The full structured note JSON rides on a Composition extension so the
 // dashboard can rehydrate it without re-parsing narratives.
 // Falls back to an in-memory store when Medplum credentials are absent,
@@ -280,7 +281,7 @@ export async function deletePatient(patientId: string): Promise<void> {
     return;
   }
   const medplum = await getMedplum();
-  for (const type of ['RiskAssessment', 'Composition', 'DocumentReference', 'Encounter'] as const) {
+  for (const type of ['Observation', 'RiskAssessment', 'Composition', 'DocumentReference', 'Encounter'] as const) {
     const related = await medplum.searchResources(type, `subject=Patient/${patientId}&_count=100`);
     for (const resource of related) {
       await medplum.deleteResource(type, resource.id as string);
