@@ -46,10 +46,14 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
   const intensityRef = useRef(intensity);
   const reactivityRef = useRef(reactivity);
   const hoverRef = useRef(false);
-  modeRef.current = mode;
-  idleRef.current = idle;
-  intensityRef.current = intensity;
-  reactivityRef.current = reactivity;
+  // The animation loop reads these through refs so a prop change never
+  // restarts it; mirror them in an effect rather than during render.
+  useEffect(() => {
+    modeRef.current = mode;
+    idleRef.current = idle;
+    intensityRef.current = intensity;
+    reactivityRef.current = reactivity;
+  }, [mode, idle, intensity, reactivity]);
 
   useEffect(() => {
     const root = rootRef.current;

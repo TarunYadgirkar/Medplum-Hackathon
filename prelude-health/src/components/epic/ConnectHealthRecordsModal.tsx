@@ -15,6 +15,8 @@ type Props = {
 };
 
 const CONNECT_DELAY_MS = 2000;
+// Mouse-driven closes are ignored for this long after the modal mounts.
+const CLOSE_GUARD_MS = 500;
 
 function CloseIcon() {
   return (
@@ -108,13 +110,17 @@ export function ConnectHealthRecordsModal({ onClose, patientName }: Props) {
     setStep('connecting');
   };
 
-  const openedAtRef = useRef(Date.now());
+  const openedAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    openedAtRef.current = Date.now();
+  }, []);
 
   // Rapid double-clicks on the trigger land the second click inside the freshly
   // mounted modal (Cancel/backdrop sit under the trigger) and instantly close it —
   // ignore mouse-driven closes right after open. Escape stays unguarded.
   const guardedClose = () => {
-    if (Date.now() - openedAtRef.current < 500) return;
+    const openedAt = openedAtRef.current;
+    if (openedAt === null || Date.now() - openedAt < CLOSE_GUARD_MS) return;
     onClose();
   };
 

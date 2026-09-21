@@ -172,7 +172,8 @@ function ReactiveBars({ active }: { active: boolean }) {
   // fighting a stale inline style once we fall back to it.
   useEffect(() => {
     if (useCss) {
-      for (const el of barRefs.current) {
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const el = barRefs.current[i];
         if (el) el.style.height = '';
       }
     }
@@ -224,7 +225,9 @@ export default function IntakePage() {
 
   // Browser back/forward moves between steps instead of leaving the flow.
   const stepRef = useRef<Step>('form');
-  stepRef.current = step;
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
   const stopRef = useRef<(() => unknown) | null>(null);
 
   // The agent can end the call itself (end_checkin function) — chart the visit.
@@ -261,7 +264,9 @@ export default function IntakePage() {
   const grok = useGrokVoice();
   const voice = provider === 'grok' ? grok : deepgram;
   const { state: voiceState, transcript, coverage, error, stop } = voice;
-  stopRef.current = stop;
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
 
   // Live transcript auto-scrolls to the newest utterance.
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -335,7 +340,9 @@ export default function IntakePage() {
       goToStep('complete');
     }
   }, [session, stop, name, sessionName, payerKey, planId, goToStep]);
-  finishCallRef.current = () => { void finishCall(); };
+  useEffect(() => {
+    finishCallRef.current = () => { void finishCall(); };
+  }, [finishCall]);
 
   const stepIdx = STEP_INDEX[step];
 
