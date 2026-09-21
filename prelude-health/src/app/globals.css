@@ -1,7 +1,4 @@
 @import "tailwindcss";
-/* Icon font. Material Symbols is an icon family, so next/font/google
-   cannot host it; display=block avoids a flash of ligature names. */
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@24,400,0,0&display=block');
 
 /* ── Design-language tokens ─────────────────────────────────────────────
    Values from the Claude Design handoff (docs/UI_SPEC.md · "Prelude UI
@@ -57,7 +54,19 @@ body {
   font-feature-settings: "ss01", "cv01";
 }
 
-/* Material Symbols Sharp icon helper (font imported at the top of this file) */
+/* Icon font. Material Symbols is an icon family, so next/font/google cannot
+   host it, and Turbopack strips a remote @import — hence the self-hosted
+   woff2 (the opsz 24 / wght 400 / FILL 0 / GRAD 0 instance Google serves).
+   font-display: block so no one sees raw ligature names like "expand_more". */
+@font-face {
+  font-family: 'Material Symbols Sharp';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/material-symbols-sharp.woff2') format('woff2');
+}
+
+/* Material Symbols Sharp icon helper (font declared above) */
 .msymbol {
   font-family: 'Material Symbols Sharp';
   font-weight: 400;
