@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* Icon font. Material Symbols is an icon family, so next/font/google
+   cannot host it; display=block avoids a flash of ligature names. */
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@24,400,0,0&display=block');
 
 /* ── Design-language tokens ─────────────────────────────────────────────
    Values from the Claude Design handoff (docs/UI_SPEC.md · "Prelude UI
@@ -54,7 +57,7 @@ body {
   font-feature-settings: "ss01", "cv01";
 }
 
-/* Material Symbols Sharp icon helper (loaded in layout.tsx) */
+/* Material Symbols Sharp icon helper (font imported at the top of this file) */
 .msymbol {
   font-family: 'Material Symbols Sharp';
   font-weight: 400;
