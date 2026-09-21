@@ -12,6 +12,7 @@ interface DemoPatient {
   targetRisk: 'high' | 'low' | 'medium';
   allergies?: { substance: string; reaction: string }[];
   medications?: { name: string; dosage: string }[];
+  symptoms?: { text: string; severity: number; daysAgo: number }[];
 }
 
 const PATIENTS: DemoPatient[] = [
@@ -87,6 +88,11 @@ Agent: Perfect, this all sounds routine and low risk. We'll get your vitals and 
     targetStatus: 'reviewed',
     targetRisk: 'medium',
     allergies: [{ substance: 'Sulfamethoxazole', reaction: 'hives' }],
+    symptoms: [
+      { text: 'Tingling in both feet, worse at night', severity: 5, daysAgo: 6 },
+      { text: 'Very thirsty all afternoon, drank about two litres', severity: 6, daysAgo: 3 },
+      { text: 'Tired enough that I skipped my evening walk', severity: 4, daysAgo: 1 },
+    ],
     medications: [
       { name: 'Metformin', dosage: '1000mg twice daily' },
       { name: 'Lisinopril', dosage: '10mg once daily' },
@@ -176,6 +182,22 @@ async function seedClinicalBackground(patientId: string, patient: DemoPatient): 
   }
 }
 
+// Patient-logged symptoms land on the same FHIR Patient as the visit, so the
+// agent retrieves them through lookup_patient_history on the next check-in.
+async function seedSymptoms(patientId: string, patient: DemoPatient): Promise<void> {
+  for (const symptom of patient.symptoms || []) {
+    const onset = new Date(Date.now() - symptom.daysAgo * 86_400_000).toISOString();
+    const res = await fetch(`${BASE_URL}/api/symptoms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patientId, text: symptom.text, severity: symptom.severity, onset }),
+    });
+    const body = await res.json();
+    assertOk(res, body, 'symptoms POST');
+    console.log(`logged symptom ${body.id} (${symptom.daysAgo}d ago)`);
+  }
+}
+
 async function seedPatient(patient: DemoPatient): Promise<void> {
   console.log(`\n--- Seeding ${patient.name} (target: ${patient.targetStatus}/${patient.targetRisk}) ---`);
 
@@ -218,6 +240,7 @@ async function seedPatient(patient: DemoPatient): Promise<void> {
   assertOk(patchRes, patchBody, 'notes PATCH');
 
   await seedClinicalBackground(patientId, patient);
+  await seedSymptoms(patientId, patient);
 
   const verifyRes = await fetch(`${BASE_URL}/api/notes/${noteId}`);
   const verifyBody = await verifyRes.json();
