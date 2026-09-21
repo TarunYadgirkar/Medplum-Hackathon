@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Nav, SectionCard, MicroLabel, Btn } from '@/components/primitives';
 import { LAB_FLAG_STYLES } from '@/data/epic-mock';
@@ -11,6 +11,7 @@ import {
   RECORDS_CHANGED_EVENT,
   type EpicImportState,
 } from '@/lib/epic-import';
+import { useClientValue } from '@/hooks/useClientValue';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { ChartTimeline } from '@/components/records/ChartTimeline';
 import { RecordSummaryStrip } from '@/components/records/RecordSummaryStrip';
@@ -38,79 +39,38 @@ const TABS: { id: RecordTab; label: string }[] = [
 
 type Snapshot = EpicImportState | null | undefined;
 
-let cachedSnapshot: Snapshot = undefined;
-const listeners = new Set<() => void>();
+const readEpicImport = (): Snapshot => getEpicImport();
+const noEpicImportYet = (): Snapshot => undefined;
 
-function notify() {
-  cachedSnapshot = undefined;
-  listeners.forEach((l) => l());
-}
-
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  // Refresh when records change anywhere (e.g. the Epic import modal), not just
-  // via this page's own actions.
-  const onExternalChange = () => {
-    cachedSnapshot = undefined;
-    cb();
-  };
-  if (typeof window !== 'undefined') {
-    window.addEventListener(RECORDS_CHANGED_EVENT, onExternalChange);
-  }
-  return () => {
-    listeners.delete(cb);
-    if (typeof window !== 'undefined') {
-      window.removeEventListener(RECORDS_CHANGED_EVENT, onExternalChange);
-    }
-  };
-}
-
-function getSnapshot(): Snapshot {
-  if (cachedSnapshot !== undefined) return cachedSnapshot;
-  cachedSnapshot = getEpicImport();
-  return cachedSnapshot;
-}
-
-function getServerSnapshot(): Snapshot {
-  return undefined;
+// The tab lives in the URL so back/forward/refresh/share behave like a real
+// site. The server render has no query string, so it always starts on "all".
+function readTabFromUrl(): RecordTab {
+  const tab = new URLSearchParams(window.location.search).get('tab') as RecordTab | null;
+  return tab && TABS.some((t) => t.id === tab) ? tab : 'all';
 }
 
 const EMERGENCY_NOTE =
   'Prelude is a pre-visit check-in tool, not a diagnosis system. In an emergency call 911, or 988 for mental health crises.';
 
 export default function RecordsPage() {
-  const importState = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [importState] = useClientValue(readEpicImport, noEpicImportYet(), RECORDS_CHANGED_EVENT);
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
-  const [activeTab, setActiveTab] = useState<RecordTab>('all');
-
-  // Tab lives in the URL so back/forward/refresh/share behave like a real site.
-  useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get('tab') as RecordTab | null;
-    if (fromUrl && TABS.some((t) => t.id === fromUrl)) setActiveTab(fromUrl);
-    const onPop = () => {
-      const tab = new URLSearchParams(window.location.search).get('tab') as RecordTab | null;
-      setActiveTab(tab && TABS.some((t) => t.id === tab) ? tab : 'all');
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
+  const [activeTab, refreshTab] = useClientValue(readTabFromUrl, 'all', 'popstate');
 
   const selectTab = useCallback((tab: RecordTab) => {
     const url = tab === 'all' ? window.location.pathname : `${window.location.pathname}?tab=${tab}`;
     window.history.pushState(null, '', url);
-    setActiveTab(tab);
-  }, []);
+    refreshTab();
+  }, [refreshTab]);
 
   const handleLoadDemo = useCallback(() => {
     setIsLoadingDemo(true);
     saveEpicImport('sutter', 'Sutter Health');
-    notify();
     setIsLoadingDemo(false);
   }, []);
 
   const handleClear = useCallback(() => {
     clearEpicImport();
-    notify();
   }, []);
 
   if (importState === undefined) {

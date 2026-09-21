@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Btn, SectionCard } from '@/components/primitives';
 import { saveMedCard, sanitizeField } from '@/lib/medcard';
+import { useClientValue } from '@/hooks/useClientValue';
 
 type EntryState =
   | 'idle'
@@ -54,6 +55,8 @@ function getSpeechRecognition(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+const isSpeechSupported = () => getSpeechRecognition() !== null;
+
 const INPUT_CLASS =
   'w-full rounded-xl px-3 py-2.5 text-sm bg-surface border border-line text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-light transition-colors';
 
@@ -66,7 +69,7 @@ const MIC_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
-  const [supported, setSupported] = useState(true);
+  const [supported] = useClientValue(isSpeechSupported, true);
   const [state, setState] = useState<EntryState>('idle');
   const [interim, setInterim] = useState('');
   const [transcript, setTranscript] = useState('');
@@ -78,19 +81,13 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
   const finalTranscriptRef = useRef('');
   const stoppedByUserRef = useRef(false);
 
-  useEffect(() => {
-    setSupported(getSpeechRecognition() !== null);
-    return () => {
-      recognitionRef.current?.abort();
-    };
+  useEffect(() => () => {
+    recognitionRef.current?.abort();
   }, []);
 
   const startListening = useCallback(() => {
     const Ctor = getSpeechRecognition();
-    if (!Ctor) {
-      setSupported(false);
-      return;
-    }
+    if (!Ctor) return;
 
     const recognition = new Ctor();
     recognition.continuous = true;

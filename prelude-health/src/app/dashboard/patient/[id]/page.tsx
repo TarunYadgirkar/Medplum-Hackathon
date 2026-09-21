@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import { Icon, MicroLabel, Nav, RiskBadge, StatusChip } from '@/components/primitives';
 import { getEpicImport, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
 import type { EpicImportResult } from '@/data/epic-mock';
+import { useClientValue } from '@/hooks/useClientValue';
 import type { Note, PatientRow } from '@/types';
 
 /* ── Event model ───────────────────────────────────────────────────── */
@@ -335,10 +336,12 @@ export default function PatientChartPage() {
 
   const [row, setRow] = useState<PatientRow | null>(null);
   const [note, setNote] = useState<Note | null>(null);
-  const [epic, setEpic] = useState<EpicImportResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  // No id in the route means there is nothing to load, so never start in loading.
+  const [loading, setLoading] = useState(Boolean(patientId));
   const [view, setView] = useState<'timeline' | 'calendar'>('timeline');
   const [activeTypes, setActiveTypes] = useState<Set<EventType>>(new Set());
+  const [epicImport] = useClientValue(getEpicImport, null, RECORDS_CHANGED_EVENT);
+  const epic: EpicImportResult | null = epicImport?.record ?? null;
 
   const today = useMemo<DateParts>(() => {
     const now = new Date();
@@ -367,16 +370,9 @@ export default function PatientChartPage() {
       if (!cancelled) setLoading(false);
     }
     if (patientId) void load();
-    else setLoading(false);
     return () => { cancelled = true; };
   }, [patientId]);
 
-  useEffect(() => {
-    const read = () => setEpic(getEpicImport()?.record ?? null);
-    read();
-    window.addEventListener(RECORDS_CHANGED_EVENT, read);
-    return () => window.removeEventListener(RECORDS_CHANGED_EVENT, read);
-  }, []);
 
   const events = useMemo(
     () => (row ? buildEvents(row, note, epic) : []),

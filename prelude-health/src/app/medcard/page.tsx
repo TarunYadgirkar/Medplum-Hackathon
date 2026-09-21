@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { Nav, SectionCard, Btn } from '@/components/primitives';
 import { MedCard } from '@/components/medcard/MedCard';
 import { PillBottleScanner } from '@/components/medcard/PillBottleScanner';
@@ -8,23 +8,16 @@ import { VoiceMedEntry } from '@/components/medcard/VoiceMedEntry';
 import { ManualMedForm } from '@/components/medcard/ManualMedForm';
 import { TrialMatches } from '@/components/medcard/TrialMatches';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
-import { getMedCard, clearMedCard, type MedCardData } from '@/lib/medcard';
+import { getMedCard, clearMedCard } from '@/lib/medcard';
+import { useClientValue } from '@/hooks/useClientValue';
 
 export default function MedCardPage() {
-  const [card, setCard] = useState<MedCardData | null>(null);
-
-  const refresh = useCallback(() => {
-    setCard(getMedCard());
-  }, []);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const [card, refresh] = useClientValue(getMedCard, null);
 
   const handleClear = useCallback(() => {
     clearMedCard();
-    setCard(null);
-  }, []);
+    refresh();
+  }, [refresh]);
 
   return (
     <div className="min-h-screen flex flex-col">
