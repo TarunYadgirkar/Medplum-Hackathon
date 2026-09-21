@@ -99,6 +99,13 @@ export default function Home() {
               <span className="text-sm font-bold">My health records</span>
               <Icon name="arrow_forward" className="text-[16px]" />
             </Link>
+            <Link
+              href="/timeline"
+              className="group flex items-center justify-between gap-3 px-6 py-4 border-t border-line sm:col-span-2 transition-all duration-200 hover:bg-ink hover:text-bright"
+            >
+              <span className="text-sm font-bold">Log a symptom on my timeline</span>
+              <Icon name="arrow_forward" className="text-[16px]" />
+            </Link>
           </div>
         </div>
 

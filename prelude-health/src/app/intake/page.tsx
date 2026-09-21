@@ -15,6 +15,7 @@ import CoverageBot from '@/components/coverage-bot/CoverageBot';
 import VoiceOrb from '@/components/voice-orb/VoiceOrb';
 import { ConnectHealthRecordsButton } from '@/components/epic/ConnectHealthRecordsButton';
 import { getImportedHistoryDocs, getEpicImport, importMatchesPatient, RECORDS_CHANGED_EVENT } from '@/lib/epic-import';
+import { savePatientSession } from '@/lib/patient-session';
 import { CARRIERS } from '@/data/insurance-plans';
 import { ensureMic, micActive, readLevel } from '@/lib/mic-level';
 
@@ -289,6 +290,7 @@ export default function IntakePage() {
       const data = await res.json();
       setSession(data);
       setSessionName(effectiveName);
+      if (data?.patientId) savePatientSession({ patientId: data.patientId, patientName: effectiveName });
       goToStep('calling');
 
       const cfg = await fetch('/api/voice-config').then((r) => r.json()).catch(() => ({ provider: 'demo' }));
