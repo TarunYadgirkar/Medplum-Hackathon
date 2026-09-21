@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { deleteSymptom, listSymptoms, logSymptom } from '@/lib/symptoms';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Patient ids travel in a header or a JSON body, never in the URL, so nothing
 // identifying lands in access logs or a browser history entry.
@@ -28,6 +29,8 @@ function serverError(label: string, err: unknown) {
 }
 
 export async function GET(req: NextRequest) {
+  const limited = rateLimit(req, 'symptoms');
+  if (limited) return limited;
   const parsed = PatientId.safeParse(req.headers.get(PATIENT_HEADER));
   if (!parsed.success) return badRequest();
   try {
@@ -38,6 +41,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 'symptoms');
+  if (limited) return limited;
   const parsed = CreateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return badRequest();
   try {
@@ -48,6 +53,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const limited = rateLimit(req, 'symptoms');
+  if (limited) return limited;
   const parsed = DeleteSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return badRequest();
   try {
