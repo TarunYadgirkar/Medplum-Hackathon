@@ -90,3 +90,17 @@ Fresh code written at the hackathon, reusing our own prior art where it made sen
 
 Prelude never diagnoses, prescribes, or treats. Red-flag symptoms end the intake with a 911/988
 instruction. All notes are drafts requiring licensed-provider review. Demo uses synthetic data only.
+
+## Known limitations
+
+**Health data sits in browser localStorage.** Connecting a health record or saving a MedCard writes
+real medical detail (medications, allergies, conditions, lab values) into `localStorage` as plain
+JSON, with no encryption and no expiry, so it survives until someone clicks "Clear saved data". Any
+script on the same origin, or anyone who can read the browser profile, can read it too, so drive the
+demo with synthetic patients only.
+
+**Server-side state hangs off `globalThis`, so it is per-instance.** The zero-config fallback stores
+for patients, notes, symptoms, and indexed history live in module memory attached to `globalThis`,
+and the new per-IP rate limiter counts requests the same way. Each serverless instance keeps its own
+copy and a cold start begins empty, so a request answered by a second instance can miss what an
+earlier one wrote, and the 30/min limit applies per instance rather than across the deployment.
