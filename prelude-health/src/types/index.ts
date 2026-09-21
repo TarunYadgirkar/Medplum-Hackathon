@@ -91,3 +91,13 @@ export interface TranscriptUtterance {
   role: 'agent' | 'user';
   content: string;
 }
+
+// A patient-logged symptom, stored as a FHIR Observation (see src/lib/symptoms.ts).
+export interface SymptomEntry {
+  id: string;
+  text: string;
+  severity: number; // 1-10
+  onset: string; // ISO — when the patient felt it
+  tags: string[];
+  recorded_at?: string;
+}
