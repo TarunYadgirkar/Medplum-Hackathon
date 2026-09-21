@@ -13,7 +13,7 @@ import { AGE_RANGE_EXT, NOTE_JSON_EXT, NOTE_STATUS_EXT, PROVIDER_NOTE_EXT, getMe
 import type { Note, NoteGenerationResult, NoteStatus, PatientRow, RiskLevel } from '@/types';
 
 // ── In-memory fallback ──────────────────────────────────────────────
-interface MemNote extends Note { }
+type MemNote = Note;
 const mem = globalThis as unknown as {
   __mem?: {
     patients: Map<string, { id: string; name: string; age_range?: string; appointment_type?: string; created_at: string; call_status: string }>;

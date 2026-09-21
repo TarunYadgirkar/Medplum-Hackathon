@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Icon, Nav, StatusChip, BulletList, MicroLabel } from '@/components/primitives';
+import { Icon, Nav, StatusChip, MicroLabel } from '@/components/primitives';
 import CoverageBot from '@/components/coverage-bot/CoverageBot';
 import { CommunitySuggestions } from '@/components/communities/CommunitySuggestions';
 import { PastVisits } from '@/components/visits/PastVisits';
