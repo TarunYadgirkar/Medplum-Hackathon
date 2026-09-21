@@ -223,39 +223,14 @@ export default function IntakePage() {
     return () => window.removeEventListener(RECORDS_CHANGED_EVENT, sync);
   }, [name]);
 
-  // Browser back/forward moves between steps instead of leaving the flow.
-  const stepRef = useRef<Step>('form');
-  useEffect(() => {
-    stepRef.current = step;
-  }, [step]);
-  const stopRef = useRef<(() => unknown) | null>(null);
-
-  // The agent can end the call itself (end_checkin function) — chart the visit.
-  const finishCallRef = useRef<(() => void) | null>(null);
-  useEffect(() => {
-    const onComplete = () => {
-      if (stepRef.current === 'calling') finishCallRef.current?.();
-    };
-    window.addEventListener('prelude:call-complete', onComplete);
-    return () => window.removeEventListener('prelude:call-complete', onComplete);
-  }, []);
-
   const goToStep = useCallback((next: Step) => {
     window.history.pushState({ intakeStep: next }, '');
     setStep(next);
   }, []);
 
+  // Give the first entry a step so back from the form leaves the flow cleanly.
   useEffect(() => {
     window.history.replaceState({ intakeStep: 'form' }, '');
-    const onPop = (e: PopStateEvent) => {
-      const target: Step = e.state?.intakeStep ?? 'form';
-      // Leaving a live call via back: end it cleanly first.
-      if (stepRef.current === 'calling' && target !== 'calling') stopRef.current?.();
-      // Back from the done screen restarts the flow rather than replaying a call.
-      setStep(target === 'calling' || target === 'complete' ? 'form' : target);
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   // Two interchangeable voice engines: Deepgram Voice Agent (sponsor, primary)
@@ -264,9 +239,6 @@ export default function IntakePage() {
   const grok = useGrokVoice();
   const voice = provider === 'grok' ? grok : deepgram;
   const { state: voiceState, transcript, coverage, error, stop } = voice;
-  useEffect(() => {
-    stopRef.current = stop;
-  }, [stop]);
 
   // Live transcript auto-scrolls to the newest utterance.
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -340,9 +312,28 @@ export default function IntakePage() {
       goToStep('complete');
     }
   }, [session, stop, name, sessionName, payerKey, planId, goToStep]);
+  // Browser back/forward moves between steps instead of leaving the flow, and the
+  // agent can end the call itself (the end_checkin function) — both read the live
+  // step and the live engine, so they re-subscribe whenever those change rather
+  // than reading a ref that an effect has yet to catch up on.
   useEffect(() => {
-    finishCallRef.current = () => { void finishCall(); };
-  }, [finishCall]);
+    const onComplete = () => {
+      if (step === 'calling') void finishCall();
+    };
+    const onPop = (e: PopStateEvent) => {
+      const target: Step = e.state?.intakeStep ?? 'form';
+      // Leaving a live call via back: end it cleanly first.
+      if (step === 'calling' && target !== 'calling') stop();
+      // Back from the done screen restarts the flow rather than replaying a call.
+      setStep(target === 'calling' || target === 'complete' ? 'form' : target);
+    };
+    window.addEventListener('prelude:call-complete', onComplete);
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('prelude:call-complete', onComplete);
+      window.removeEventListener('popstate', onPop);
+    };
+  }, [step, stop, finishCall]);
 
   const stepIdx = STEP_INDEX[step];
 
