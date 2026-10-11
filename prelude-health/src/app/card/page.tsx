@@ -22,7 +22,7 @@ export default function CareCardPage() {
 
   const isSample = !hash;
   const card = decoded ?? (isSample ? DEMO_CARE_CARD : null);
-  const shareUrl = typeof window === 'undefined' || !card ? '' : `${window.location.origin}${careCardPath(card)}`;
+  const shareUrl = card ? `${window.location.origin}${careCardPath(card)}` : '';
 
   return (
     <div className="min-h-dvh bg-surface flex flex-col">
@@ -33,6 +33,13 @@ export default function CareCardPage() {
             <p className="flex items-start gap-2.5 bg-brand-light px-4 py-3 text-[13.5px] text-ink print:hidden">
               <Icon name="info" className="text-[18px] text-brand shrink-0" />
               This is a sample card for a seeded demo patient. Finish a check-in to get your own.
+            </p>
+          )}
+          {decoded && (
+            <p className="flex items-start gap-2.5 bg-panel px-4 py-3 text-[13.5px] text-ink shadow-[inset_0_0_0_1px_var(--color-line)] print:hidden">
+              <Icon name="link" className="text-[18px] text-brand shrink-0" />
+              Shared Care Cards are opened straight from the link and are not checked by Prelude. If symptoms
+              feel severe, call 911.
             </p>
           )}
           {card ? (

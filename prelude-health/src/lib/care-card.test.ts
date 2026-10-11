@@ -65,6 +65,8 @@ describe('Care Card links', () => {
     expect(decodeCareCard('#not-base64!!')).toBeNull();
     const tampered = encodeCareCard({ ...card, careLevel: 'hospital' } as unknown as typeof card);
     expect(decodeCareCard(tampered)).toBeNull();
-    expect(decodeCareCard('a'.repeat(9000))).toBeNull();
+    expect(decodeCareCard('a'.repeat(13_000))).toBeNull();
+    expect(decodeCareCard(encodeCareCard({ ...card, issued: '2026-13-45' }))).toBeNull();
+    expect(decodeCareCard(encodeCareCard({ ...card, costs: { ...card.costs, telehealth: { min: 50, max: 10 } } }))).toBeNull();
   });
 });

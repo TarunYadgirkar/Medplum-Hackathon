@@ -100,8 +100,8 @@ export default function CareCardView({ card }: { card: CareCard }) {
               Call 911 or go to the ER if you notice
             </h2>
             <ul className="flex flex-col gap-1.5">
-              {card.redFlags.map((flag) => (
-                <li key={flag} className="flex gap-2.5 text-[14px] text-ink">
+              {card.redFlags.map((flag, i) => (
+                <li key={`${i}-${flag}`} className="flex gap-2.5 text-[14px] text-ink">
                   <span className="mt-2 w-1.5 h-1.5 bg-danger shrink-0" aria-hidden />
                   {flag}
                 </li>

@@ -6,8 +6,12 @@ import { resolveCarrierPlan } from '@/data/insurance-plans';
 import { estimateCareCosts } from '@/lib/cost-estimate';
 import type { CoverageSummary, NoteGenerationResult } from '@/types';
 
-const Range = z.object({ min: z.number().min(0).max(100_000), max: z.number().min(0).max(100_000) });
+const Range = z
+  .object({ min: z.number().min(0).max(100_000), max: z.number().min(0).max(100_000) })
+  .refine((r) => r.min <= r.max);
 const MAX_RED_FLAGS = 6;
+// Fits a maxed-out card even when every field is 3-byte UTF-8.
+const MAX_FRAGMENT_CHARS = 12_000;
 
 export const CareCardSchema = z.object({
   v: z.literal(1),
@@ -20,7 +24,10 @@ export const CareCardSchema = z.object({
   plan: z.string().max(80).optional(),
   costs: z.object({ telehealth: Range, primary_care: Range, urgent_care: Range, emergency_room: Range }),
   costSource: z.enum(['stedi', 'synthetic', 'self_pay']),
-  issued: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  issued: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`))),
 });
 
 export type CareCard = z.infer<typeof CareCardSchema>;
@@ -87,7 +94,7 @@ export function encodeCareCard(card: CareCard): string {
 // The fragment comes from whoever sent the link, so it is parsed as untrusted.
 export function decodeCareCard(fragment: string): CareCard | null {
   const raw = fragment.replace(/^#/, '').trim();
-  if (!raw || raw.length > 8000) return null;
+  if (!raw || raw.length > MAX_FRAGMENT_CHARS) return null;
   try {
     const parsed = CareCardSchema.safeParse(JSON.parse(fromBase64Url(raw)));
     return parsed.success ? parsed.data : null;
