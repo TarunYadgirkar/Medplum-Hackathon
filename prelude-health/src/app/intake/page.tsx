@@ -18,6 +18,7 @@ import { getImportedHistoryDocs, getEpicImport, importMatchesPatient, RECORDS_CH
 import { savePatientSession } from '@/lib/patient-session';
 import { CARRIERS } from '@/data/insurance-plans';
 import { ensureMic, micActive, readLevel } from '@/lib/mic-level';
+import { buildCareCard, careCardPath } from '@/lib/care-card';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const OTHER_APPOINTMENT = '__other__';
@@ -210,6 +211,7 @@ export default function IntakePage() {
   const [provider, setProvider] = useState<'deepgram' | 'grok' | 'demo'>('deepgram');
   const [finishing, setFinishing] = useState(false);
   const [noteId, setNoteId] = useState<string | null>(null);
+  const [cardPath, setCardPath] = useState<string | null>(null);
   const [chartConnected, setChartConnected] = useState(false);
   const [voiceFirst, setVoiceFirst] = useState(false);
   const [sessionName, setSessionName] = useState('');
@@ -305,6 +307,17 @@ export default function IntakePage() {
       });
       const data = await res.json();
       setNoteId(data.noteId ?? null);
+      const card = data.result
+        ? buildCareCard({
+            result: data.result,
+            coverage: data.coverage,
+            payerKey: payerKey === 'NONE' ? undefined : payerKey,
+            planId: payerKey === 'NONE' ? undefined : planId,
+            patientName: sessionName || name,
+            issued: new Date(),
+          })
+        : null;
+      setCardPath(card ? careCardPath(card) : null);
     } catch (err) {
       console.error('generate-note failed', err);
     } finally {
@@ -751,49 +764,49 @@ export default function IntakePage() {
               {step === 'complete' && <CoverageBot />}
               {step === 'complete' && (
                 <div className="border border-line bg-panel p-6 sm:p-8">
-                  <div className="flex items-center gap-2.5">
-                    <Icon name="task_alt" className="text-[20px] text-positive" />
-                    <span className="text-[10px] font-bold uppercase tracking-[.22em] text-positive">Step 4 · done</span>
-                  </div>
-
                   <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                    className="mt-6 w-24 h-24 flex items-center justify-center text-bright [background:linear-gradient(135deg,var(--color-positive),var(--color-ink))]">
-                    <Icon name="check" className="text-[52px]" />
+                    className="w-16 h-16 flex items-center justify-center text-bright bg-positive">
+                    <Icon name="check" className="text-[38px]" />
                   </motion.div>
 
                   <h1 className="mt-5 text-[34px] font-extrabold leading-none tracking-tight text-ink">You&apos;re checked in</h1>
-                  <p className="mt-3 max-w-sm text-sm text-body leading-relaxed">
-                    Your conversation was charted as FHIR resources in Medplum. Your provider will review the AI draft note before your visit.
+                  <p className="mt-3 max-w-[52ch] text-[15px] text-body leading-relaxed">
+                    Your answers are in your chart. Your clinician reviews the draft note before your visit. Your
+                    Care Card shows where to go and what each option costs on your plan.
                   </p>
 
-                  <div className="mt-5 flex flex-col gap-px bg-line border border-line">
-                    {[
-                      { icon: 'person', color: 'text-brand', label: 'Patient · Encounter created' },
-                      { icon: 'article', color: 'text-brand', label: 'DocumentReference · transcript' },
-                      { icon: 'note_alt', color: 'text-caution', label: 'Composition · SOAP draft' },
-                      ...(coverage?.copay != null
-                        ? [{ icon: 'payments', color: 'text-positive', label: `Copay $${coverage.copay} · confirmed` }]
-                        : []),
-                    ].map(({ icon, color, label }) => (
-                      <div key={label} className="bg-bright px-4 py-3 flex items-center gap-3">
-                        <Icon name={icon} className={`text-[19px] ${color}`} />
-                        <span className="text-xs font-semibold text-ink">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 space-y-2.5">
-                    {noteId && (
-                      <Link href={`/dashboard/${noteId}`}
-                        className="flex items-center justify-center gap-2.5 bg-ink text-bright font-bold text-xs tracking-[.06em] px-6 py-4 transition-all duration-200 hover:[background:var(--grad-hover)] hover:tracking-[.1em]">
-                        <Icon name="description" className="text-[18px]" />
-                        View the provider&apos;s draft note
+                  <div className="mt-6 flex flex-col gap-2.5">
+                    {cardPath && (
+                      <Link href={cardPath}
+                        className="flex items-center justify-center gap-2.5 bg-ink text-bright font-bold text-[15px] px-6 py-4 transition-colors duration-200 hover:bg-brand">
+                        <Icon name="id_card" className="text-[20px]" />
+                        Open your Care Card
                       </Link>
                     )}
-                    <Link href="/dashboard"
-                      className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-brand transition-colors hover:text-brand-dark">
-                      Provider dashboard<Icon name="arrow_forward" className="text-[16px]" />
-                    </Link>
+                    {noteId && (
+                      <Link href={`/dashboard/${noteId}`}
+                        className="flex items-center justify-center gap-2.5 bg-bright text-ink font-bold text-[14px] px-6 py-3.5 shadow-[inset_0_0_0_1px_var(--color-line)] transition-colors duration-200 hover:bg-surface">
+                        <Icon name="description" className="text-[18px]" />
+                        See the clinician&apos;s draft note
+                      </Link>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex flex-col gap-px bg-line shadow-[0_0_0_1px_var(--color-line)]">
+                    <p className="bg-panel px-4 pt-3 pb-2 text-[12.5px] font-semibold text-faint">Saved to Medplum as FHIR resources</p>
+                    {[
+                      { icon: 'person', label: 'Patient and Encounter' },
+                      { icon: 'article', label: 'DocumentReference with your transcript' },
+                      { icon: 'note_alt', label: 'Composition with the draft SOAP note' },
+                      ...(coverage?.copay != null
+                        ? [{ icon: 'payments', label: `Copay $${coverage.copay}, confirmed with your insurer` }]
+                        : []),
+                    ].map(({ icon, label }) => (
+                      <div key={label} className="bg-bright px-4 py-3 flex items-center gap-3">
+                        <Icon name={icon} className="text-[19px] text-brand" />
+                        <span className="text-[13px] font-semibold text-ink">{label}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
