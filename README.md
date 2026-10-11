@@ -2,13 +2,16 @@
 
 **Live:** https://prelude-health.vercel.app · **App code:** [`prelude-health/`](prelude-health)
 
+![Prelude: a demo check-in that ends in a Care Card](prelude-health/assets/generated/prelude-after-flow.gif)
+
 A patient talks to Prelude for ~3 minutes before their visit. The conversation is charted
 **live into Medplum FHIR**, the voice agent retrieves the patient's history via **Moss**
 mid-sentence, answers "how much will this cost?" with a **Stedi** eligibility check, and the
 provider opens their dashboard to review an **AI-drafted SOAP note** — plus deep research,
 care options, and past visits — before the patient ever sits down.
 
-Built at the YC × Medplum Agentic Healthcare Hackathon (Aug 1, 2026).
+Built at the YC × Medplum Agentic Healthcare Hackathon (Aug 1, 2026) by
+[Tarun Yadgirkar](https://github.com/TarunYadgirkar) and [Nithin Aruswamy](https://github.com/nithinaru).
 
 ---
 
@@ -30,7 +33,11 @@ Built at the YC × Medplum Agentic Healthcare Hackathon (Aug 1, 2026).
    - `lookup_patient_history` → Moss semantic search over the patient's chart
    - `check_insurance_coverage` → Stedi eligibility (copay/deductible/coinsurance)
    - `end_checkin` → the agent wraps up and ends the call itself after a recap + goodbye
-5. **Done** — the visit is charted to Medplum as FHIR resources automatically.
+5. **Done** — the visit is charted to Medplum as FHIR resources automatically, and the patient
+   gets a **Care Card**: suggested care level with reasoning, what each option (telehealth,
+   primary care, urgent care, ER) costs on their plan, and when to call 911. The card travels
+   as a link whose URL fragment holds the card itself, so sharing it stores nothing server-side.
+   `/card` with no link shows a sample card for the seeded demo patient.
 6. **Extras:** `/records` (MyChart-style imported chart with timeline + tabs),
    `/medcard` (medication card + pill-bottle scanner + manual entry), and a
    CoverageBot slide-over for a guided insurance cost check anytime.
@@ -133,6 +140,7 @@ cd prelude-health
 npm install
 cp .env.example .env   # fill in keys — every one is optional
 npm run dev            # http://localhost:3000
+npm test               # unit tests (cost estimate, Care Card links)
 bash scripts/smoke.sh  # keyless end-to-end pipeline test (dev server must be running)
 ```
 
@@ -149,8 +157,9 @@ Environment variables (names only — see `prelude-health/docs/SETUP_KEYS.md` fo
 | `XAI_API_KEY` / `VOICE_PROVIDER` | Grok backup voice engine (`VOICE_PROVIDER=grok` forces it) |
 | `BASE_URL` | Base URL override for scripts |
 
-With **no keys at all** the app still works end to end (demo transcript, in-memory store,
-keyword history, synthetic eligibility, demo note).
+With **no keys at all** the app still works end to end (demo transcript, in-memory store
+preloaded with the three seeded demo patients, keyword history, synthetic eligibility, demo note).
+All model IDs live in `prelude-health/src/lib/models.ts`.
 
 ---
 
@@ -163,3 +172,19 @@ keyword history, synthetic eligibility, demo note).
 3. `/records` → import MyChart — the chart is personalized to the name you entered.
 4. `/dashboard` → open the new note: SOAP draft, risk, coverage, research, care options.
    Click **Approve** — then show the same visit as FHIR resources at app.medplum.com.
+
+---
+
+## History
+
+Prelude is the successor to **CarePath** (Autonomous Healthcare Hackathon, June 2026), Tarun's
+voice-first care navigator that told you which level of care to seek, why, and what it would cost
+on your insurance, then handed you a shareable Care Card.
+Live: [carepath-five.vercel.app](https://carepath-five.vercel.app) ·
+Repo: [github.com/TarunYadgirkar/carepath](https://github.com/TarunYadgirkar/carepath) (archived).
+
+Prelude already carried CarePath's voice engine, pricing data, med card and records import. In
+October 2026 the rest was folded in: the per-plan cost estimate across care levels
+(`src/lib/cost-estimate.ts`) and the shareable Care Card (`src/lib/care-card.ts`, `/card`), both
+with unit tests.
+
