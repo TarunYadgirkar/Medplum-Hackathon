@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Icon, Nav } from '@/components/primitives';
 import CareCardView from '@/components/care-card/CareCardView';
 import ShareCardActions from '@/components/care-card/ShareCardActions';
@@ -12,7 +12,10 @@ import { useClientValue } from '@/hooks/useClientValue';
 const readHash = () => window.location.hash;
 
 export default function CareCardPage() {
-  const [hash] = useClientValue<string | null>(readHash, null, 'hashchange');
+  const [hash, refreshHash] = useClientValue<string | null>(readHash, null, 'hashchange');
+  // A client-side navigation can render this page before the URL carries the
+  // fragment, and pushState fires no hashchange, so re-read once mounted.
+  useEffect(() => refreshHash(), [refreshHash]);
   const decoded = useMemo(() => (hash ? decodeCareCard(hash) : null), [hash]);
 
   if (hash === null) return <div className="min-h-dvh bg-surface" />;
