@@ -72,8 +72,8 @@ function Spinner({ className = 'w-5 h-5' }: { className?: string }) {
 
 function Row({ icon, iconClass, label, children }: { icon: string; iconClass: string; label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[52px_1fr] gap-5 py-5 border-t border-line">
-      <div className="flex flex-col items-center gap-1.5 pt-0.5">
+    <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[52px_1fr] sm:gap-5 py-5 border-t border-line">
+      <div className="flex sm:flex-col items-center gap-2 sm:gap-1.5 pt-0.5">
         <Icon name={icon} className={`text-[25px] ${iconClass}`} />
         <span className="text-[11px] font-semibold uppercase tracking-[.12em] text-faint">{label}</span>
       </div>
@@ -201,7 +201,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
         }
       />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-8">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 sm:py-8">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -209,7 +209,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
           className="bg-panel border border-line"
         >
           {/* ── Header ── */}
-          <div className={`border-t-4 ${HEADER_ACCENT[note.risk_level] ?? HEADER_ACCENT.none} px-6 sm:px-8 py-6 border-b border-line`}>
+          <div className={`border-t-4 ${HEADER_ACCENT[note.risk_level] ?? HEADER_ACCENT.none} px-4 sm:px-8 py-6 border-b border-line`}>
             <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[11px] font-semibold uppercase tracking-[.2em] text-faint mr-1">Risk</span>
@@ -294,7 +294,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
             </span>
           </div>
 
-          <div className="px-6 sm:px-8 pb-8">
+          <div className="px-4 sm:px-8 pb-8">
             {/* ── Flags strip ── */}
             <Row icon="flag" iconClass="text-caution" label="Flags">
               {note.risk_flags?.length > 0 ? (
@@ -413,19 +413,19 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                       <div className="mt-3.5 grid grid-cols-3 gap-px bg-bright/20">
                         <div className="bg-brand p-2.5">
                           <div className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60">Copay</div>
-                          <div className="mt-1 font-numeral font-light text-[25px] leading-none text-bright">
+                          <div className="mt-1 font-numeral font-light text-[19px] sm:text-[25px] leading-none text-bright tabular-nums break-words">
                             {note.coverage.copay != null ? formatCostRange({ min: note.coverage.copay, max: note.coverage.copay }) : 'None'}
                           </div>
                         </div>
                         <div className="bg-brand p-2.5">
                           <div className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60">Deductible</div>
-                          <div className="mt-1 font-numeral font-light text-[25px] leading-none text-bright">
+                          <div className="mt-1 font-numeral font-light text-[19px] sm:text-[25px] leading-none text-bright tabular-nums break-words">
                             {note.coverage.deductible_remaining != null ? formatCostRange({ min: note.coverage.deductible_remaining, max: note.coverage.deductible_remaining }) : 'None'}
                           </div>
                         </div>
                         <div className="bg-brand p-2.5">
                           <div className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60">Visit</div>
-                          <div className="mt-1 font-numeral font-light text-[25px] leading-none text-bright">
+                          <div className="mt-1 font-numeral font-light text-[19px] sm:text-[25px] leading-none text-bright tabular-nums break-words">
                             {formatCostRange(note.coverage.estimated_visit_cost)}
                           </div>
                         </div>

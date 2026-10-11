@@ -617,7 +617,7 @@ export default function IntakePage() {
                   <div className="p-6 sm:p-8 pb-5 sm:pb-5 border-b border-line">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h1 className="text-2xl font-extrabold text-ink tracking-tight">
-                        {demoMode ? 'Demo Mode' : voiceState === 'ended' ? 'Check-in Complete' : voiceState === 'connecting' ? 'Connecting…' : 'Speak naturally'}
+                        {demoMode ? 'Demo check-in' : voiceState === 'ended' ? 'Check-in complete' : voiceState === 'connecting' ? 'Connecting…' : 'Speak naturally'}
                       </h1>
                       {!demoMode && (
                         <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.2em] text-faint">
@@ -651,7 +651,7 @@ export default function IntakePage() {
                         <Btn onClick={() => finishCall(DEMO_TRANSCRIPT)} disabled={finishing}
                           className="w-full px-6 py-4 flex items-center justify-center gap-2.5 text-[13px]">
                           <Icon name="hub" className={`text-[18px] ${finishing ? 'animate-pulse' : ''}`} />
-                          {finishing ? 'Charting to Medplum…' : 'Use Demo Transcript + Chart Visit'}
+                          {finishing ? 'Charting your visit…' : 'Run the demo check-in'}
                         </Btn>
                       </div>
                     ) : (
@@ -794,7 +794,7 @@ export default function IntakePage() {
                   </div>
 
                   <div className="mt-6 flex flex-col gap-px bg-line shadow-[0_0_0_1px_var(--color-line)]">
-                    <p className="bg-panel px-4 pt-3 pb-2 text-[12.5px] font-semibold text-faint">Saved to Medplum as FHIR resources</p>
+                    <p className="bg-panel px-4 pt-3 pb-2 text-[12.5px] font-semibold text-faint">Charted as FHIR resources</p>
                     {[
                       { icon: 'person', label: 'Patient and Encounter' },
                       { icon: 'article', label: 'DocumentReference with your transcript' },
