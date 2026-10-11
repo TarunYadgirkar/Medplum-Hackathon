@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { GROK_VOICE_MODEL } from '@/lib/models';
 
-// Grok Voice (xAI Realtime) ephemeral token — carried over from carepath.
+// Grok Voice (xAI Realtime) ephemeral token, carried over from CarePath.
 // Backup voice engine if Deepgram has issues at the venue.
 export async function POST() {
   if (!process.env.XAI_API_KEY) {
@@ -37,5 +38,5 @@ export async function POST() {
   if (!data.value) {
     return NextResponse.json({ error: 'Grok Voice session response missing token' }, { status: 502 });
   }
-  return NextResponse.json({ token: data.value, model: 'grok-voice-think-fast-1.0' });
+  return NextResponse.json({ token: data.value, model: GROK_VOICE_MODEL });
 }

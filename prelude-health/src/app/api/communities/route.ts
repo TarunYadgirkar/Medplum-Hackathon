@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { requestJsonChat } from '@/lib/openai';
 
 // Ported from carepath's communities route. OPENAI_API_KEY is currently revoked,
 // so a curated keyword fallback keeps the demo working fully keyless.
@@ -127,19 +128,12 @@ async function suggestWithOpenAI(apiKey: string, summary: string, riskFlags: str
     ? `Symptom summary:\n${summary}\n\nRisk flags:\n- ${riskFlags.join('\n- ')}`
     : `Symptom summary:\n${summary}`;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      max_tokens: 600,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: PROMPT },
-        { role: 'user', content: userContent },
-      ],
-    }),
+  const response = await requestJsonChat(apiKey, {
+    maxOutputTokens: 2000,
+    messages: [
+      { role: 'system', content: PROMPT },
+      { role: 'user', content: userContent },
+    ],
   });
   if (!response.ok) throw new Error(`OpenAI returned ${response.status}: ${await response.text()}`);
   const data = await response.json();

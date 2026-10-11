@@ -151,7 +151,7 @@ export async function saveNote(args: {
     type: { coding: [{ system: 'http://loinc.org', code: '11488-4', display: 'Consult note' }], text: 'Pre-visit intake note (AI draft)' },
     date: new Date().toISOString(),
     title: `Pre-visit intake — ${args.result.chief_concern || 'voice check-in'}`,
-    author: [{ display: 'Prelude voice intake agent (Deepgram + Gemini)' }],
+    author: [{ display: 'Prelude voice intake agent (Deepgram + OpenAI)' }],
     subject: { reference: `Patient/${args.patientId}` },
     encounter: { reference: `Encounter/${args.encounterId}` },
     section: [

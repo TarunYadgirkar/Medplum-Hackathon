@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { requestJsonChat } from '@/lib/openai';
 
 // Ported from carepath's classify route ideas (per-option personalized
 // explanations, medical-fit ratings, questionsToAsk). Keyless fallback keeps
@@ -225,19 +226,13 @@ function buildUserContent(input: Input): string {
 }
 
 async function researchWithOpenAI(apiKey: string, input: Input): Promise<ResearchResult> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      max_tokens: 1500,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: buildUserContent(input) },
-      ],
-    }),
+  const response = await requestJsonChat(apiKey, {
+    effort: 'low',
+    maxOutputTokens: 6000,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: buildUserContent(input) },
+    ],
   });
   if (!response.ok) throw new Error(`OpenAI returned ${response.status}: ${await response.text()}`);
 

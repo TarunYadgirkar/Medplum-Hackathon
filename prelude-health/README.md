@@ -56,7 +56,7 @@ pricing, keyword history search). Add keys to light up each sponsor:
 |---|---|
 | `MEDPLUM_CLIENT_ID/SECRET` | Real FHIR resources in your Medplum project |
 | `DEEPGRAM_API_KEY` | Live voice agent (mic conversation) |
-| `GEMINI_API_KEY` | Real note generation from your transcript |
+| `OPENAI_API_KEY` | Real note generation from your transcript |
 | `STEDI_API_KEY` | Real test-mode eligibility checks |
 | `MOSS_PROJECT_ID/KEY` | Semantic history retrieval |
 
@@ -70,7 +70,7 @@ Patient browser ──(PCM16 over WebSocket)── Deepgram Voice Agent
    │                    /api/history ─── Moss (patient history index)
    │                    /api/eligibility ─ Stedi test mode (mock payers)
    │
-   └── on end: /api/generate-note ── Gemini ──► SOAP + risk + care level
+   └── on end: /api/generate-note ── OpenAI ──► SOAP + risk + care level
                                         │
                                         ▼
                         Medplum FHIR: Patient · Encounter · DocumentReference

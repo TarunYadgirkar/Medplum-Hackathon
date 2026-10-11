@@ -17,10 +17,10 @@ Stedi with a real test key, Moss with real keys. These are hackathon-morning job
 | Layer | Tool |
 |---|---|
 | Framework | Next.js 16 App Router (Turbopack), React 19, TypeScript, Tailwind 4 |
-| Voice (primary) | Deepgram Voice Agent WS — nova-3-medical STT, gpt-4o-mini think, Aura-2 TTS |
-| Voice (backup) | Grok Voice (xAI Realtime) — carried over from carepath |
+| Voice (primary) | Deepgram Voice Agent WS: nova-3-medical STT, gpt-6-luna think, Aura-2 TTS |
+| Voice (backup) | Grok Voice (xAI Realtime): grok-voice-think-fast-2.0 + grok-transcribe, carried over from CarePath |
 | FHIR record | Medplum (client-credentials server client) |
-| Note generation | Gemini `gemini-2.5-flash-lite` |
+| Note generation | OpenAI `gpt-6-luna` (all model IDs live in `src/lib/models.ts`) |
 | Eligibility | Stedi test mode (mock payers) → synthetic-pricing fallback |
 | History retrieval | Moss `@moss-dev/moss` → keyword fallback |
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { requestJsonChat } from '@/lib/openai';
 
 const MAX_TRIALS = 3;
 
@@ -125,23 +126,16 @@ async function matchWithOpenAI(
   conditions: string[],
   allergies: string[]
 ): Promise<TrialMatch[]> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(25_000),
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      max_tokens: 600,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: PROMPT },
-        {
-          role: 'user',
-          content: `Medications: ${medications.join('; ') || 'none listed'}\nConditions: ${conditions.join('; ') || 'none listed'}\nAllergies: ${allergies.join('; ') || 'none listed'}`,
-        },
-      ],
-    }),
+  const response = await requestJsonChat(apiKey, {
+    maxOutputTokens: 2000,
+    timeoutMs: 25_000,
+    messages: [
+      { role: 'system', content: PROMPT },
+      {
+        role: 'user',
+        content: `Medications: ${medications.join('; ') || 'none listed'}\nConditions: ${conditions.join('; ') || 'none listed'}\nAllergies: ${allergies.join('; ') || 'none listed'}`,
+      },
+    ],
   });
   if (!response.ok) throw new Error(`OpenAI returned ${response.status}`);
   const data = await response.json();

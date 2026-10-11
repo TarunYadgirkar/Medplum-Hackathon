@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { completeIntake, saveNote } from '@/lib/store';
 import { checkEligibility } from '@/lib/stedi';
 import type { NoteGenerationResult } from '@/types';
+import { requestJsonChat } from '@/lib/openai';
 
 // Adapted from klarity-voicenote's generate-note route:
 // transcript → OpenAI → structured note + care recommendation → FHIR in Medplum.
@@ -85,20 +86,14 @@ export async function POST(req: NextRequest) {
 }
 
 async function generateWithOpenAI(apiKey: string, transcript: string): Promise<NoteGenerationResult> {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      temperature: 0.2,
-      max_tokens: 4096,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: PROMPT },
-        { role: 'user', content: `Transcript:\n${transcript}` },
-      ],
-    }),
+  const response = await requestJsonChat(apiKey, {
+    effort: 'low',
+    maxOutputTokens: 8000,
+    timeoutMs: 60_000,
+    messages: [
+      { role: 'system', content: PROMPT },
+      { role: 'user', content: `Transcript:\n${transcript}` },
+    ],
   });
   if (!response.ok) throw new Error(`OpenAI returned ${response.status}: ${await response.text()}`);
   const data = await response.json();

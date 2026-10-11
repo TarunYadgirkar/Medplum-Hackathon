@@ -24,8 +24,8 @@ then **redeploy** (env changes don't apply to old deployments). CLI alternative:
 
 ## 3. OpenAI (note generation) — 2 min
 1. platform.openai.com → API keys.
-2. Set `OPENAI_API_KEY`. Optional: `OPENAI_MODEL` (default `gpt-4o-mini`).
-   (Gemini was replaced by OpenAI on hackathon day — key already in the committed `.env`.)
+2. Set `OPENAI_API_KEY`. Optional: `OPENAI_MODEL` (default `gpt-6-luna`, see `src/lib/models.ts`).
+   (Gemini was replaced by OpenAI on hackathon day.)
 
 ## 4. Stedi (eligibility, optional but a big demo moment) — 5 min
 1. stedi.com → sign up → get a **test API key** (test mode is free, mock payers only).

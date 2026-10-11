@@ -24,7 +24,7 @@ Built at the YC × Medplum Agentic Healthcare Hackathon (Aug 1, 2026).
    and visit type in conversation.
 3. **Consent screen** — explicit consent + emergency language (911/988).
 4. **Voice call** — talk naturally. Live transcript charts on screen as you speak
-   (Deepgram Voice Agent: nova-3-medical STT → gpt-4o-mini reasoning → Aura-2 TTS).
+   (Deepgram Voice Agent: nova-3-medical STT → gpt-6-luna reasoning → Aura-2 TTS).
    Barge-in works; mic noise gate stops background audio from interrupting; mute buttons
    for both mic and the agent. Mid-conversation the agent calls client-side functions:
    - `lookup_patient_history` → Moss semantic search over the patient's chart
@@ -63,7 +63,7 @@ Built at the YC × Medplum Agentic Healthcare Hackathon (Aug 1, 2026).
         ▼              ▼                                       ▼
  Deepgram Voice   Next.js API routes (src/app/api/*) ──────────┘
  Agent (STT →     │ voice-token (JWT grant)   eligibility ──► Stedi 270/271
- gpt-4o-mini →    │ intake-session            history ──────► Moss semantic search
+ gpt-6-luna →     │ intake-session            history ──────► Moss semantic search
  Aura-2 TTS)      │ generate-note             research ─────► OpenAI
    │ function     │ calls/[id]                communities ──► OpenAI + Arctic Shift
    │ calls back   │ patients, notes/[id]      scan-label ───► OpenAI vision
@@ -84,11 +84,11 @@ keys** (demo transcript → note → dashboard), proven by `scripts/smoke.sh`.
 | Sponsor | What it does | Where in code |
 |---|---|---|
 | **Medplum** | System of record. Every check-in becomes real FHIR: Patient, Encounter (in-progress → finished), DocumentReference (base64 transcript), Composition (SOAP + review-status extension, preliminary → final on approve), RiskAssessment. Returning-patient history is rebuilt from the live FHIR record. | `prelude-health/src/lib/medplum.ts`, `src/lib/store.ts`, `src/lib/fhir-history.ts` |
-| **Deepgram** | Primary voice engine — Voice Agent WebSocket with nova-3-medical STT, gpt-4o-mini think stage, Aura-2 TTS. Client-side function calling (history, coverage, agent-initiated call end), barge-in, KeepAlive, JWT token grant. | `src/hooks/useVoiceAgent.ts`, `src/lib/agent-config.ts`, `src/lib/audio.ts`, `src/app/api/voice-token/route.ts` |
+| **Deepgram** | Primary voice engine — Voice Agent WebSocket with nova-3-medical STT, gpt-6-luna think stage, Aura-2 TTS. Client-side function calling (history, coverage, agent-initiated call end), barge-in, KeepAlive, JWT token grant. | `src/hooks/useVoiceAgent.ts`, `src/lib/agent-config.ts`, `src/lib/audio.ts`, `src/app/api/voice-token/route.ts` |
 | **Moss** | Semantic retrieval over patient history. Index built non-blocking at intake start; agent queries it mid-sentence via `lookup_patient_history`; keyword fallback when keyless. | `src/lib/moss.ts`, `src/app/api/history/route.ts` |
 | **Stedi** | Real-time eligibility (270/271) in test mode with verified mock payers (UHC, Cigna, Aetna, CMS). Keyless mode builds a per-plan **simulated 271** and parses it through the same parser, so the demo answer is structurally identical. | `src/lib/stedi.ts`, `src/app/api/eligibility/route.ts`, `src/data/insurance-plans.ts` |
 | **OpenAI** | SOAP note generation, deep research panel, Reddit community matching, pill-label vision scan. | `src/app/api/generate-note/route.ts`, `api/research/`, `api/communities/`, `api/scan-label/` |
-| **xAI (Grok Voice)** | Backup voice engine with an identical hook interface — swappable via `VOICE_PROVIDER=grok`. | `src/hooks/useGrokVoice.ts`, `src/app/api/realtime-token/route.ts` |
+| **xAI (Grok Voice)** | Backup voice engine (`grok-voice-think-fast-2.0`, `grok-transcribe`) with an identical hook interface, swappable via `VOICE_PROVIDER=grok`. | `src/hooks/useGrokVoice.ts`, `src/app/api/realtime-token/route.ts` |
 
 ---
 

@@ -8,6 +8,7 @@
 //                              patient logged themselves on /timeline)
 
 import { sanitizeField } from '@/lib/medcard';
+import { VOICE_THINK_MODEL } from '@/lib/models';
 
 export const AGENT_WS_URL = 'wss://agent.deepgram.com/v1/agent/converse';
 
@@ -84,7 +85,7 @@ Hard rules:
         },
       },
       think: {
-        provider: { type: 'open_ai', model: 'gpt-4o-mini', temperature: 0.6 },
+        provider: { type: 'open_ai', model: VOICE_THINK_MODEL },
         prompt,
         functions: [
           {

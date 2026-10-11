@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { requestJsonChat } from '@/lib/openai';
 
 const MAX_IMAGE_BASE64_LEN = 8 * 1024 * 1024;
 const MAX_TEXT_LEN = 2000;
@@ -40,20 +41,6 @@ const IMAGE_SYSTEM_PROMPT = `You are a pill bottle label reader. Extract medicat
 
 const TEXT_SYSTEM_PROMPT = `You extract medications from a patient's spoken or typed description. The text may mention several medications. Return JSON: {"medications": [{"medicationName": string, "dosage": string, "frequency": string, "confidence": "low"|"medium"|"high"}]}. Use "" for any dosage or frequency the patient did not state. Confidence reflects how clearly the medication was named. If no medications are mentioned, return {"medications": []}. Never invent medications not present in the text.`;
 
-async function callOpenAI(apiKey: string, body: Record<string, unknown>): Promise<Response> {
-  return fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(25_000),
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      ...body,
-    }),
-  });
-}
-
 export async function POST(req: NextRequest) {
   // Reject oversized payloads before buffering the whole body.
   const contentLength = Number(req.headers.get('content-length') || 0);
@@ -80,8 +67,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const response = isTextMode
-      ? await callOpenAI(apiKey, {
-          max_tokens: 800,
+      ? await requestJsonChat(apiKey, {
+          maxOutputTokens: 2000,
+          timeoutMs: 25_000,
           messages: [
             { role: 'system', content: TEXT_SYSTEM_PROMPT },
             {
@@ -90,8 +78,9 @@ export async function POST(req: NextRequest) {
             },
           ],
         })
-      : await callOpenAI(apiKey, {
-          max_tokens: 400,
+      : await requestJsonChat(apiKey, {
+          maxOutputTokens: 1000,
+          timeoutMs: 25_000,
           messages: [
             { role: 'system', content: IMAGE_SYSTEM_PROMPT },
             {
