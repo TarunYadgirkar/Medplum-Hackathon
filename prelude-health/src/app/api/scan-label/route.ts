@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requestJsonChat } from '@/lib/openai';
+import { rateLimit } from '@/lib/rate-limit';
 
 const MAX_IMAGE_BASE64_LEN = 8 * 1024 * 1024;
 const MAX_TEXT_LEN = 2000;
@@ -42,6 +43,8 @@ const IMAGE_SYSTEM_PROMPT = `You are a pill bottle label reader. Extract medicat
 const TEXT_SYSTEM_PROMPT = `You extract medications from a patient's spoken or typed description. The text may mention several medications. Return JSON: {"medications": [{"medicationName": string, "dosage": string, "frequency": string, "confidence": "low"|"medium"|"high"}]}. Use "" for any dosage or frequency the patient did not state. Confidence reflects how clearly the medication was named. If no medications are mentioned, return {"medications": []}. Never invent medications not present in the text.`;
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 'scan-label');
+  if (limited) return limited;
   // Reject oversized payloads before buffering the whole body.
   const contentLength = Number(req.headers.get('content-length') || 0);
   if (contentLength > 12 * 1024 * 1024) {

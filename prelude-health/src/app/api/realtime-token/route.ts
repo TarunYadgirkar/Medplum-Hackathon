@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/rate-limit';
 import { GROK_VOICE_MODEL } from '@/lib/models';
 
 // Grok Voice (xAI Realtime) ephemeral token, carried over from CarePath.
 // Backup voice engine if Deepgram has issues at the venue.
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 'realtime-token');
+  if (limited) return limited;
   if (!process.env.XAI_API_KEY) {
     return NextResponse.json({ error: 'XAI_API_KEY is not configured' }, { status: 500 });
   }
@@ -30,7 +33,7 @@ export async function POST() {
   }
 
   if (!response.ok) {
-    console.error('Realtime token upstream error:', response.status, await response.text());
+    console.error('Realtime token upstream error:', response.status, (await response.text()).slice(0, 500));
     return NextResponse.json({ error: 'Voice service temporarily unavailable' }, { status: 502 });
   }
 

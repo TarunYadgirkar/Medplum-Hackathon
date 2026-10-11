@@ -4,6 +4,7 @@ import { completeIntake, saveNote } from '@/lib/store';
 import { checkEligibility } from '@/lib/stedi';
 import type { NoteGenerationResult } from '@/types';
 import { requestJsonChat } from '@/lib/openai';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Adapted from klarity-voicenote's generate-note route:
 // transcript → OpenAI → structured note + care recommendation → FHIR in Medplum.
@@ -46,6 +47,8 @@ const Schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 'generate-note');
+  if (limited) return limited;
   const parsed = Schema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });

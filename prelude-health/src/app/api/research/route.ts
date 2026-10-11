@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requestJsonChat } from '@/lib/openai';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Ported from carepath's classify route ideas (per-option personalized
 // explanations, medical-fit ratings, questionsToAsk). Keyless fallback keeps
@@ -251,6 +252,8 @@ async function researchWithOpenAI(apiKey: string, input: Input): Promise<Researc
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 'research');
+  if (limited) return limited;
   const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requestJsonChat } from '@/lib/openai';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Ported from carepath's communities route. OPENAI_API_KEY is currently revoked,
 // so a curated keyword fallback keeps the demo working fully keyless.
@@ -189,6 +190,8 @@ async function enrich(candidate: Candidate): Promise<Community> {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 'communities');
+  if (limited) return limited;
   const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });

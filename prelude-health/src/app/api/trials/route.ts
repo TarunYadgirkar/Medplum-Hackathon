@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requestJsonChat } from '@/lib/openai';
+import { rateLimit } from '@/lib/rate-limit';
 
 const MAX_TRIALS = 3;
 
@@ -145,6 +146,8 @@ async function matchWithOpenAI(
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 'trials');
+  if (limited) return limited;
   const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
