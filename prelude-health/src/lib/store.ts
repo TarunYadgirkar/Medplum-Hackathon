@@ -11,6 +11,8 @@
 import type { Composition, DocumentReference, Encounter, Patient } from '@medplum/fhirtypes';
 import { AGE_RANGE_EXT, NOTE_JSON_EXT, NOTE_STATUS_EXT, PROVIDER_NOTE_EXT, getMedplum, medplumConfigured } from './medplum';
 import type { Note, NoteGenerationResult, NoteStatus, PatientRow, RiskLevel } from '@/types';
+import { DEMO_NOTES } from '@/data/demo-notes';
+import { DEMO_PATIENTS } from '@/data/demo-patients';
 
 // ── In-memory fallback ──────────────────────────────────────────────
 type MemNote = Note;
@@ -21,9 +23,69 @@ const mem = globalThis as unknown as {
     notes: Map<string, MemNote>;
   };
 };
-if (!mem.__mem) mem.__mem = { patients: new Map(), transcripts: new Map(), notes: new Map() };
-const memdb = mem.__mem!;
 const rid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+if (!mem.__mem) mem.__mem = seededMemory();
+const memdb = mem.__mem!;
+
+function toNote(args: { patientId: string; encounterId: string; result: NoteGenerationResult; coverage?: Note['coverage'] }): Note {
+  const { result } = args;
+  return {
+    id: '',
+    patient_id: args.patientId,
+    call_id: args.encounterId,
+    ai_summary: result.patient_summary,
+    soap_subjective: result.soap_note.subjective,
+    soap_objective: result.soap_note.objective,
+    soap_assessment: result.soap_note.assessment,
+    soap_plan: result.soap_note.plan,
+    risk_level: result.risk.level,
+    risk_flags: result.risk.flags,
+    suggested_questions: result.suggested_provider_questions,
+    follow_up_actions: result.follow_up_actions,
+    chief_concern: result.chief_concern,
+    symptoms_reported: result.symptoms_reported,
+    patient_goals: result.patient_goals,
+    status: result.risk.urgent_provider_review ? 'urgent_review' : 'ai_draft',
+    created_at: new Date().toISOString(),
+    care_recommendation: result.care_recommendation,
+    coverage: args.coverage,
+  };
+}
+
+// Keyless demo: start with the three seeded patients so the clinician queue
+// shows real work on first load. Medplum mode reads its own seeded records.
+function seededMemory(): NonNullable<typeof mem.__mem> {
+  const patients: NonNullable<typeof mem.__mem>['patients'] = new Map();
+  const transcripts = new Map<string, string>();
+  const notes = new Map<string, MemNote>();
+  const now = Date.now();
+  DEMO_PATIENTS.forEach((demo, i) => {
+    const demoNote = DEMO_NOTES[demo.name];
+    if (!demoNote) return;
+    const patientId = `demo-patient-${i + 1}`;
+    const encounterId = `demo-encounter-${i + 1}`;
+    const createdAt = new Date(now - (i + 1) * 17 * 60_000).toISOString();
+    patients.set(patientId, {
+      id: patientId,
+      name: demo.name,
+      age_range: demo.ageRange,
+      appointment_type: demo.appointmentType,
+      created_at: createdAt,
+      call_status: 'completed',
+    });
+    transcripts.set(encounterId, demo.transcript);
+    const note = toNote({ patientId, encounterId, result: demoNote.result, coverage: demoNote.coverage });
+    notes.set(`demo-note-${i + 1}`, {
+      ...note,
+      id: `demo-note-${i + 1}`,
+      status: demo.targetStatus,
+      risk_level: demo.targetRisk,
+      created_at: createdAt,
+      ...(demo.targetStatus === 'reviewed' ? { reviewed_at: createdAt } : {}),
+    });
+  });
+  return { patients, transcripts, notes };
+}
 
 // ── Create patient + encounter at intake start ──────────────────────
 export async function createIntake(args: {
@@ -110,33 +172,12 @@ export async function saveNote(args: {
   result: NoteGenerationResult;
   coverage?: Note['coverage'];
 }): Promise<string> {
-  const status: NoteStatus = args.result.risk.urgent_provider_review ? 'urgent_review' : 'ai_draft';
-  const noteData: Note = {
-    id: '',
-    patient_id: args.patientId,
-    call_id: args.encounterId,
-    ai_summary: args.result.patient_summary,
-    soap_subjective: args.result.soap_note.subjective,
-    soap_objective: args.result.soap_note.objective,
-    soap_assessment: args.result.soap_note.assessment,
-    soap_plan: args.result.soap_note.plan,
-    risk_level: args.result.risk.level,
-    risk_flags: args.result.risk.flags,
-    suggested_questions: args.result.suggested_provider_questions,
-    follow_up_actions: args.result.follow_up_actions,
-    chief_concern: args.result.chief_concern,
-    symptoms_reported: args.result.symptoms_reported,
-    patient_goals: args.result.patient_goals,
-    status,
-    created_at: new Date().toISOString(),
-    care_recommendation: args.result.care_recommendation,
-    coverage: args.coverage,
-  };
+  const noteData = toNote(args);
+  const status: NoteStatus = noteData.status;
 
   if (!medplumConfigured()) {
     const id = rid();
-    noteData.id = id;
-    memdb.notes.set(id, noteData);
+    memdb.notes.set(id, { ...noteData, id });
     return id;
   }
 
