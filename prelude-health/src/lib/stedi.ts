@@ -2,8 +2,8 @@
 // Docs: https://www.stedi.com/docs/healthcare/send-eligibility-checks
 //       https://www.stedi.com/docs/healthcare/api-reference/mock-requests-eligibility-checks
 // Test mode is free, uses mock payers, and never touches real PHI.
-import { syntheticPricing } from '@/data/synthetic-pricing';
 import { resolveCarrierPlan, type InsurancePlanOption } from '@/data/insurance-plans';
+import { ALLOWED_AMOUNTS, estimateVisitCost, formatCostRange, type CostRange } from '@/lib/cost-estimate';
 import type { CareLevel, CoverageSummary } from '@/types';
 
 const STEDI_URL = 'https://healthcare.us.stedi.com/2024-04-01/change/medicalnetwork/eligibility/v3';
@@ -21,14 +21,6 @@ export const MOCK_PAYERS: Record<
   CMS: { name: 'Medicare CMS (mock)', tradingPartnerServiceId: 'CMS', memberId: 'CMS12345678', firstName: 'Jane', lastName: 'Doe', dateOfBirth: '19550505' },
 };
 
-const CARE_LEVEL_TO_BASE_COST: Record<CareLevel, { min: number; max: number }> = {
-  self_care: { min: 0, max: 20 },
-  telehealth: syntheticPricing.baseCosts.telehealth,
-  primary_care: syntheticPricing.baseCosts.primary_care,
-  urgent_care: syntheticPricing.baseCosts.urgent_care,
-  emergency_room: syntheticPricing.baseCosts.emergency_room,
-};
-
 interface EligibilityArgs {
   payerKey?: string; // UHC | CIGNA | AETNA | BCBS | KAISER | MEDICARE | MEDICAID (legacy: CMS)
   planId?: string; // plan id from insurance-plans.ts; missing → carrier's first plan
@@ -42,7 +34,7 @@ export async function checkEligibility(args: EligibilityArgs): Promise<CoverageS
   const { carrier, plan } = resolveCarrierPlan(args.payerKey, args.planId);
   const displayName = `${carrier.name} ${plan.name}`;
   const careLevel: CareLevel = args.careLevel || 'primary_care';
-  const baseCost = CARE_LEVEL_TO_BASE_COST[careLevel];
+  const baseCost = ALLOWED_AMOUNTS[careLevel];
   const payer = carrier.stediPayerKey ? MOCK_PAYERS[carrier.stediPayerKey] : undefined;
 
   if (!process.env.STEDI_API_KEY || !payer) {
@@ -85,7 +77,7 @@ export function parseStediResponse(
   data: any,
   payerName: string,
   careLevel: CareLevel,
-  baseCost: { min: number; max: number }
+  baseCost: CostRange
 ): CoverageSummary {
   const benefits: any[] = Array.isArray(data?.benefitsInformation) ? data.benefitsInformation : [];
 
@@ -119,10 +111,10 @@ export function parseStediResponse(
   const coinsHit = pick((b) => b.code === 'A' && b.benefitPercent != null);
   const coinsurance = coinsHit ? Math.round(Number(coinsHit.benefitPercent) * 100) : undefined;
 
-  const est = estimateOutOfPocket(baseCost, copay, coinsurance, deductible);
+  const est = estimateVisitCost(baseCost, { copay, deductibleRemaining: deductible, coinsurancePct: coinsurance });
   const spoken =
     `Your ${payerName} plan shows ${planStatus.toLowerCase() || 'unknown status'}. ` +
-    (copay != null ? `Expect roughly a $${copay} copay` : `Expect roughly $${est.min}–$${est.max} out of pocket`) +
+    (copay != null ? `Expect roughly a $${copay} copay` : `Expect roughly ${formatCostRange(est)} out of pocket`) +
     ` for a ${careLevel.replace('_', ' ')} visit.`;
 
   return {
@@ -146,7 +138,7 @@ function simulatedCoverage(
   payerName: string,
   plan: InsurancePlanOption,
   careLevel: CareLevel,
-  baseCost: { min: number; max: number }
+  baseCost: CostRange
 ): CoverageSummary {
   const copay = plan.copays[careLevel === 'self_care' ? 'telehealth' : careLevel];
   const serviceTypeCodes =
@@ -171,20 +163,4 @@ function simulatedCoverage(
 
   const parsed = parseStediResponse({ benefitsInformation }, payerName, careLevel, baseCost);
   return { ...parsed, source: 'synthetic' };
-}
-
-function estimateOutOfPocket(
-  base: { min: number; max: number },
-  copay?: number,
-  coinsurancePct?: number,
-  deductibleRemaining?: number
-): { min: number; max: number } {
-  if (copay != null && (!deductibleRemaining || deductibleRemaining === 0)) {
-    return { min: copay, max: copay };
-  }
-  const pct = coinsurancePct != null ? coinsurancePct / 100 : 1;
-  return {
-    min: Math.round(Math.min(base.min, (deductibleRemaining ?? base.min)) * (pct || 1)) || base.min,
-    max: Math.round(base.max),
-  };
 }
