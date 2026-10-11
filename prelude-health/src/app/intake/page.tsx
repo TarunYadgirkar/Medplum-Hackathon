@@ -19,6 +19,7 @@ import { savePatientSession } from '@/lib/patient-session';
 import { CARRIERS } from '@/data/insurance-plans';
 import { ensureMic, micActive, readLevel } from '@/lib/mic-level';
 import { buildCareCard, careCardPath } from '@/lib/care-card';
+import { formatCostRange } from '@/lib/cost-estimate';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const OTHER_APPOINTMENT = '__other__';
@@ -58,7 +59,7 @@ Agent: Great. I've charted everything for your provider to review before your vi
 
 /* Micro field label (design-system recipe) */
 function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <span className="block text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">{children}</span>;
+  return <span className="block text-[12px] font-semibold text-faint">{children}</span>;
 }
 
 /* Dark voice stage — hero call presence. The orb is the one place circles are allowed. */
@@ -67,15 +68,15 @@ function VoiceStage({ state }: { state: string }) {
     state === 'ended'
       ? { icon: 'hub', text: 'Charting your visit…' }
       : state === 'connecting'
-        ? { icon: 'mic', text: 'Connecting — allow microphone access…' }
+        ? { icon: 'mic', text: 'Connecting. Allow microphone access…' }
         : state === 'agent_speaking'
           ? { icon: 'volume_up', text: 'Prelude is speaking' }
-          : { icon: 'hearing', text: 'Listening — speak when ready' };
+          : { icon: 'hearing', text: 'Listening. Speak when ready' };
   return (
-    <div className="relative h-72 bg-ink overflow-hidden flex items-center justify-center">
+    <div className="relative h-72 bg-stage overflow-hidden flex items-center justify-center">
       {/* ambient glows */}
-      <div className="absolute w-72 h-72 -left-10 -top-16 rounded-full bg-caution/25 blur-3xl" aria-hidden />
-      <div className="absolute w-64 h-64 -right-12 -bottom-16 rounded-full bg-danger/25 blur-3xl" aria-hidden />
+      <div className="absolute w-72 h-72 -left-10 -top-16 rounded-full bg-stage-glow/30 blur-3xl" aria-hidden />
+      <div className="absolute w-64 h-64 -right-12 -bottom-16 rounded-full bg-positive/30 blur-3xl" aria-hidden />
       {/* corner ticks */}
       {(['left-2.5 top-2.5', 'right-2.5 top-2.5', 'left-2.5 bottom-2.5', 'right-2.5 bottom-2.5'] as const).map((pos) => (
         <span key={pos} className={`absolute ${pos}`} aria-hidden>
@@ -94,7 +95,7 @@ function VoiceStage({ state }: { state: string }) {
         <VoiceOrb mode="mic" size={165} intensity={state === 'connecting' ? 0.5 : 1} reactivity={state === 'connecting' ? 1 : 2.6} className="scale-90 sm:scale-100" />
       )}
 
-      <span className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 text-[9.5px] font-bold uppercase tracking-[.2em] text-bright/80">
+      <span className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[.2em] text-bright/80">
         <Icon name={status.icon} className="text-[16px]" />
         {status.text}
       </span>
@@ -102,7 +103,7 @@ function VoiceStage({ state }: { state: string }) {
   );
 }
 
-const BAR_COLORS = ['bg-ink', 'bg-ink', 'bg-caution', 'bg-danger', 'bg-caution', 'bg-ink', 'bg-ink'];
+const BAR_COLORS = ['bg-ink', 'bg-brand', 'bg-brand', 'bg-positive', 'bg-brand', 'bg-brand', 'bg-ink'];
 const BAR_COUNT = BAR_COLORS.length;
 const RING_SIZE = 60;
 
@@ -356,7 +357,7 @@ export default function IntakePage() {
   return (
     <div className="min-h-dvh bg-surface flex flex-col">
       <Nav right={
-        <span className="flex items-center gap-2 text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">
+        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.2em] text-faint">
           <Icon name="person" className="text-[16px]" />Voice check-in
         </span>
       } />
@@ -388,12 +389,12 @@ export default function IntakePage() {
                 <div className="border border-line bg-panel p-6 sm:p-8">
                   <h1 className="text-3xl font-extrabold text-ink tracking-tight">Check in before your visit</h1>
                   <p className="mt-2.5 text-sm text-body leading-relaxed">
-                    Talk to Prelude for ~3 minutes. Your conversation is charted for your doctor as it happens — and you can ask what your visit will cost.
+                    Talk with Prelude for about three minutes. What you say goes into your chart as you speak, and you can ask what the visit will cost.
                   </p>
 
                   <div className="mt-5 flex items-center gap-3.5 bg-danger/10 border-l-4 border-danger px-4 py-3">
                     <Icon name="emergency" className="text-[22px] text-danger shrink-0" />
-                    <p className="text-sm text-ink leading-relaxed"><strong className="text-danger">Not a doctor.</strong> Prelude collects information only — no diagnosis, no treatment. In an emergency call <strong>911</strong> (or <strong>988</strong> for mental health crisis).</p>
+                    <p className="text-sm text-ink leading-relaxed"><strong className="text-danger">Not a doctor.</strong> Prelude collects information and does not diagnose or treat. In an emergency call <strong>911</strong>, or <strong>988</strong> for a mental health crisis.</p>
                   </div>
 
                   <div className="mt-6 space-y-3.5">
@@ -434,7 +435,7 @@ export default function IntakePage() {
                               <option>Annual physical</option>
                               <option>Follow-up</option>
                               <option>Telehealth consult</option>
-                              <option value={OTHER_APPOINTMENT}>Other — describe it…</option>
+                              <option value={OTHER_APPOINTMENT}>Other (describe it)</option>
                             </select>
                             {chev}
                           </div>
@@ -545,7 +546,7 @@ export default function IntakePage() {
                         </p>
                         <p className="text-xs text-body mt-0.5">
                           {chartConnected
-                            ? 'Prelude has your meds, allergies and history — it won’t re-ask.'
+                            ? 'Prelude already has your meds, allergies and history, so it won’t ask again.'
                             : 'Import your record so Prelude already knows your meds and allergies.'}
                         </p>
                       </div>
@@ -561,7 +562,7 @@ export default function IntakePage() {
                   <button type="button" onClick={() => { setVoiceFirst(true); goToStep('consent'); }}
                     className="mt-3 w-full border border-line bg-surface hover:border-brand hover:bg-brand-light transition-colors px-6 py-3.5 flex items-center justify-center gap-2.5 text-[13px] font-semibold text-ink">
                     <Icon name="mic" className="text-[18px] text-brand" />
-                    Skip the form — just talk to Prelude
+                    Skip the form and talk to Prelude
                   </button>
                   <p className="mt-1.5 text-center text-xs text-faint">Prelude will ask your name and visit type in conversation.</p>
                 </div>
@@ -619,15 +620,15 @@ export default function IntakePage() {
                         {demoMode ? 'Demo Mode' : voiceState === 'ended' ? 'Check-in Complete' : voiceState === 'connecting' ? 'Connecting…' : 'Speak naturally'}
                       </h1>
                       {!demoMode && (
-                        <span className="flex items-center gap-2 text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">
+                        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.2em] text-faint">
                           <Icon name="graphic_eq" className="text-[16px] text-positive" />
                           {provider === 'grok' ? 'Grok Voice (fallback)' : 'Deepgram Voice Agent'}
                         </span>
                       )}
                     </div>
                     <p className="mt-2 text-sm text-body">
-                      {demoMode ? 'No voice keys configured — use the demo transcript to see the full pipeline.'
-                        : 'Speak naturally. Ask what your visit will cost — Prelude checks your coverage live.'}
+                      {demoMode ? 'Voice is off in this demo because no voice keys are set. Use the demo transcript to run the full check-in.'
+                        : 'Speak naturally. Ask what your visit will cost and Prelude checks your coverage live.'}
                     </p>
                   </div>
 
@@ -643,7 +644,7 @@ export default function IntakePage() {
                         <div className="border border-line bg-bright">
                           <div className="flex items-center gap-2.5 px-5 pt-4">
                             <Icon name="smart_toy" className="text-[18px] text-brand" />
-                            <span className="text-[9.5px] font-bold uppercase tracking-[.2em] text-faint">Demo transcript preview</span>
+                            <span className="text-[11px] font-bold uppercase tracking-[.2em] text-faint">Demo transcript preview</span>
                           </div>
                           <p className="px-5 py-4 text-sm text-body leading-relaxed line-clamp-4 whitespace-pre-line">{DEMO_TRANSCRIPT}</p>
                         </div>
@@ -665,10 +666,10 @@ export default function IntakePage() {
                           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}
                             className="bg-brand p-5">
                             <div className="flex items-center justify-between gap-3">
-                              <span className="flex items-center gap-2 text-[9.5px] font-bold uppercase tracking-[.2em] text-bright/85">
+                              <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.2em] text-bright/85">
                                 <Icon name="shield" className="text-[17px]" />Live coverage check
                               </span>
-                              <span className="text-[8.5px] font-semibold uppercase tracking-[.14em] text-bright/60 border border-bright/30 px-2 py-1">
+                              <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60 border border-bright/30 px-2 py-1">
                                 {coverage.source === 'stedi' ? 'Stedi test mode' : 'synthetic data'}
                               </span>
                             </div>
@@ -679,22 +680,22 @@ export default function IntakePage() {
                             <div className="mt-4 grid grid-cols-2 gap-px bg-bright/20">
                               {coverage.copay != null ? (
                                 <div className="bg-brand p-3">
-                                  <span className="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[.16em] text-bright/60">
+                                  <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.16em] text-bright/60">
                                     <Icon name="payments" className="text-[14px]" />Copay
                                   </span>
                                   <p className="mt-1.5 font-numeral text-3xl text-bright">${coverage.copay}</p>
                                 </div>
                               ) : (
                                 <div className="bg-brand p-3">
-                                  <span className="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[.16em] text-bright/60">
+                                  <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.16em] text-bright/60">
                                     <Icon name="videocam" className="text-[14px]" />Visit est.
                                   </span>
-                                  <p className="mt-1.5 font-numeral text-3xl text-bright">${coverage.estimated_visit_cost.min}–{coverage.estimated_visit_cost.max}</p>
+                                  <p className="mt-1.5 font-numeral text-3xl text-bright">{formatCostRange(coverage.estimated_visit_cost)}</p>
                                 </div>
                               )}
                               {coverage.deductible_remaining != null && (
                                 <div className="bg-brand p-3">
-                                  <span className="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[.16em] text-bright/60">
+                                  <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.16em] text-bright/60">
                                     <Icon name="savings" className="text-[14px]" />Deduct. left
                                   </span>
                                   <p className="mt-1.5 font-numeral text-3xl text-bright">${coverage.deductible_remaining}</p>
@@ -707,10 +708,10 @@ export default function IntakePage() {
                         {transcript.length > 0 && (
                           <div className="border border-line bg-bright px-5 py-4">
                             <div className="flex items-center justify-between gap-3">
-                              <span className="flex items-center gap-2 text-[9.5px] font-bold uppercase tracking-[.18em] text-body">
+                              <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.18em] text-body">
                                 <Icon name="record_voice_over" className="text-[17px]" />Live transcript
                               </span>
-                              <span className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[.16em] text-brand">
+                              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.16em] text-brand">
                                 <Icon name="hub" className="text-[15px] animate-pulse" />Charting to FHIR
                               </span>
                             </div>

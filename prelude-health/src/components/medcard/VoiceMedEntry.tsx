@@ -58,7 +58,7 @@ function getSpeechRecognition(): SpeechRecognitionCtor | null {
 const isSpeechSupported = () => getSpeechRecognition() !== null;
 
 const INPUT_CLASS =
-  'w-full rounded-xl px-3 py-2.5 text-sm bg-surface border border-line text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-light transition-colors';
+  'w-full px-3 py-2.5 text-sm bg-surface border border-line text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-light transition-colors';
 
 const MIC_ERROR_MESSAGES: Record<string, string> = {
   'not-allowed': 'Microphone access was denied. Allow mic access in your browser settings, or type your medications below instead.',
@@ -233,9 +233,9 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
       </p>
 
       {!supported && (
-        <div role="status" className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-          <p className="text-sm font-semibold text-amber-700">Voice input not supported in this browser</p>
-          <p className="mt-1 text-xs leading-relaxed text-amber-600">
+        <div role="status" className=" bg-caution/10 border border-caution/25 px-4 py-3">
+          <p className="text-sm font-semibold text-caution">Voice input not supported in this browser</p>
+          <p className="mt-1 text-xs leading-relaxed text-caution">
             Try Chrome, or use the pill bottle scanner and manual entry below.
           </p>
         </div>
@@ -247,7 +247,7 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
             type="button"
             onClick={startListening}
             aria-label="Start describing your medications by voice"
-            className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-bright transition-all duration-200 hover:[background:var(--grad-hover)]"
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-bright transition-all duration-200 hover:bg-brand"
           >
             <MicIcon className="h-7 w-7" />
           </button>
@@ -274,7 +274,7 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
           </p>
           <div
             aria-live="polite"
-            className="min-h-[3rem] w-full rounded-xl bg-surface border border-line px-4 py-3 text-sm leading-relaxed text-body"
+            className="min-h-[3rem] w-full bg-surface border border-line px-4 py-3 text-sm leading-relaxed text-body"
           >
             {transcript || interim ? (
               <>
@@ -304,7 +304,7 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
           </label>
 
           {errorMsg && (
-            <div role="alert" className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+            <div role="alert" className=" bg-danger/[0.07] border border-danger/25 px-4 py-3 text-sm text-danger">
               {errorMsg}
             </div>
           )}
@@ -346,7 +346,7 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
 
           <div className="flex flex-col gap-4">
             {meds.map((med, i) => (
-              <fieldset key={i} className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-3.5">
+              <fieldset key={i} className="flex flex-col gap-2.5 border border-line bg-surface p-3.5">
                 <div className="flex items-center justify-between">
                   <legend className="text-xs font-bold uppercase tracking-widest text-faint">
                     Medication {i + 1}
@@ -402,9 +402,9 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
 
       {state === 'unavailable' && (
         <div className="flex flex-col gap-3">
-          <div role="status" className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-            <p className="text-sm font-semibold text-amber-700">Extraction needs an OpenAI key</p>
-            <p className="mt-1 text-xs leading-relaxed text-amber-600">
+          <div role="status" className=" bg-caution/10 border border-caution/25 px-4 py-3">
+            <p className="text-sm font-semibold text-caution">Extraction needs an OpenAI key</p>
+            <p className="mt-1 text-xs leading-relaxed text-caution">
               Voice extraction uses OpenAI, which isn&apos;t configured on this server yet. You can
               still add medications manually below.
             </p>
@@ -417,7 +417,7 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
 
       {state === 'error' && (
         <div className="flex flex-col gap-3">
-          <div role="alert" className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+          <div role="alert" className=" bg-danger/[0.07] border border-danger/25 px-4 py-3 text-sm text-danger">
             {errorMsg ?? 'Voice input failed — please try again.'}
           </div>
           <Btn variant="secondary" className="self-start px-5 py-2.5 text-sm" onClick={handleReset}>
@@ -430,7 +430,7 @@ export function VoiceMedEntry({ onSaved }: { onSaved?: () => void }) {
         <div className="flex flex-col gap-3">
           <div
             role="status"
-            className="flex items-center gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-medium text-emerald-700"
+            className="flex items-center gap-2.5 bg-positive/10 border border-positive/25 px-4 py-3 text-sm font-medium text-positive"
           >
             <CheckIcon className="h-4 w-4 shrink-0" />
             Added {savedCount} medication{savedCount === 1 ? '' : 's'} to your MedCard

@@ -78,7 +78,7 @@ export function TrialMatches() {
       )}
 
       {status === 'error' && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-4" role="status">
+        <div className="bg-danger/[0.07] border border-danger/25 text-danger text-sm p-4" role="status">
           Couldn&apos;t check trials right now — please try again later.
         </div>
       )}
@@ -95,7 +95,7 @@ export function TrialMatches() {
           {trials.map((trial) => {
             const url = safeTrialsUrl(trial.search_url);
             return (
-              <li key={trial.title} className="bg-surface border border-line rounded-xl px-4 py-3">
+              <li key={trial.title} className="bg-surface border border-line px-4 py-3">
                 <p className="text-sm font-semibold text-ink">{trial.title}</p>
                 <p className="mt-1 text-xs leading-relaxed text-body">{trial.why_eligible}</p>
                 {url && (

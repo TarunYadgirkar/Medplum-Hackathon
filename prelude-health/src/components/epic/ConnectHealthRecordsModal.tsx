@@ -141,7 +141,7 @@ export function ConnectHealthRecordsModal({ onClose, patientName }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Connect Health Records"
-        className="w-full max-w-sm rounded-2xl border border-line bg-white shadow-lg"
+        className="w-full max-w-sm border border-line bg-white shadow-lg"
       >
         {step === 'select' && (
           <div className="p-6">
@@ -182,7 +182,7 @@ export function ConnectHealthRecordsModal({ onClose, patientName }: Props) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search health systems…"
-                className="w-full rounded-xl border border-line bg-surface py-2 pl-8 pr-4 text-sm text-ink outline-none transition-colors focus:border-brand"
+                className="w-full border border-line bg-surface py-2 pl-8 pr-4 text-sm text-ink outline-none transition-colors focus:border-brand"
               />
             </div>
 
@@ -197,7 +197,7 @@ export function ConnectHealthRecordsModal({ onClose, patientName }: Props) {
                   key={sys.id}
                   type="button"
                   onClick={() => handleSelect(sys)}
-                  className="flex items-center gap-3 rounded-xl border border-line px-4 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:border-brand hover:bg-brand-light focus-visible:outline-2"
+                  className="flex items-center gap-3 border border-line px-4 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:border-brand hover:bg-brand-light focus-visible:outline-2"
                 >
                   <span className="text-base" aria-hidden="true">{sys.logo}</span>
                   {sys.name}
@@ -256,7 +256,7 @@ export function ConnectHealthRecordsModal({ onClose, patientName }: Props) {
             >
               <CloseIcon />
             </button>
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-positive/25 bg-positive/10 text-positive">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <polyline
                   points="20 6 9 17 4 12"
@@ -285,7 +285,7 @@ export function ConnectHealthRecordsModal({ onClose, patientName }: Props) {
               <Link
                 href="/records"
                 onClick={guardedClose}
-                className="w-full rounded-xl bg-brand py-2.5 text-center text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-dark hover:shadow-md"
+                className="w-full bg-brand py-2.5 text-center text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-dark hover:shadow-md"
               >
                 View imported records
               </Link>

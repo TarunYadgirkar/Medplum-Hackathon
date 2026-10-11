@@ -20,7 +20,7 @@ function Group({
   icon: ReactNode;
 }) {
   return (
-    <div className="bg-surface border border-line rounded-xl p-4 space-y-3">
+    <div className="bg-surface border border-line p-4 space-y-3">
       <div className="flex items-center gap-2 pb-2 border-b border-line">
         <span aria-hidden="true" className="text-brand flex items-center">{icon}</span>
         <MicroLabel>{title}</MicroLabel>
@@ -67,7 +67,7 @@ const EMPTY_STATE_WAYS = [
 function EmptyState() {
   return (
     <div className="p-5">
-      <div className="rounded-xl border border-dashed border-line bg-surface px-5 py-6 text-center">
+      <div className=" border border-dashed border-line bg-surface px-5 py-6 text-center">
         <p className="text-sm font-semibold text-ink">Your card is empty — let&apos;s fix that</p>
         <p className="mt-1 text-xs text-faint">Three ways to fill it, pick whichever is easiest:</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3 text-left">
@@ -87,7 +87,7 @@ function EmptyState() {
 export function MedCard({ medications, allergies, conditions, lastUpdated }: Props) {
   const isEmpty = medications.length === 0 && allergies.length === 0 && conditions.length === 0;
   return (
-    <section aria-labelledby="medcard-heading" className="bg-white border border-line rounded-2xl shadow-sm">
+    <section aria-labelledby="medcard-heading" className="bg-white border border-line shadow-sm">
       <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-line">
         <div className="flex items-center gap-2">
           <ShieldIcon />
@@ -106,8 +106,8 @@ export function MedCard({ medications, allergies, conditions, lastUpdated }: Pro
       ) : (
         <div className="grid gap-3 p-5 sm:grid-cols-3">
           <Group title="Medications" items={medications} dotClass="bg-brand" icon={<MedIcon />} />
-          <Group title="Allergies" items={allergies} dotClass="bg-red-400" icon={<AllergyIcon />} />
-          <Group title="Conditions" items={conditions} dotClass="bg-amber-400" icon={<ConditionIcon />} />
+          <Group title="Allergies" items={allergies} dotClass="bg-danger" icon={<AllergyIcon />} />
+          <Group title="Conditions" items={conditions} dotClass="bg-caution" icon={<ConditionIcon />} />
         </div>
       )}
     </section>

@@ -9,6 +9,8 @@ import { CommunitySuggestions } from '@/components/communities/CommunitySuggesti
 import { PastVisits } from '@/components/visits/PastVisits';
 import { ResearchPanel } from '@/components/research/ResearchPanel';
 import type { Note, RiskLevel } from '@/types';
+import { CARE_LEVELS } from '@/lib/care-levels';
+import { formatCostRange } from '@/lib/cost-estimate';
 
 /* ── Config (design handoff §5f) ── */
 
@@ -17,14 +19,6 @@ const RISK_PILLS: { level: RiskLevel; active: string; hover: string }[] = [
   { level: 'low',    active: 'bg-brand text-bright ring-[3px] ring-brand/20',    hover: 'hover:bg-brand hover:text-bright hover:border-brand' },
   { level: 'medium', active: 'bg-caution text-bright ring-[3px] ring-caution/25', hover: 'hover:bg-caution hover:text-bright hover:border-caution' },
   { level: 'high',   active: 'bg-danger text-bright ring-[3px] ring-danger/25',  hover: 'hover:bg-danger hover:text-bright hover:border-danger' },
-];
-
-const CARE_LEVELS = [
-  { key: 'self_care',      label: 'Self care',    icon: 'self_improvement', activeBg: 'bg-positive', tint: 'bg-positive/15' },
-  { key: 'telehealth',     label: 'Telehealth',   icon: 'videocam',         activeBg: 'bg-positive', tint: 'bg-positive/10' },
-  { key: 'primary_care',   label: 'Primary care', icon: 'stethoscope',      activeBg: 'bg-brand',    tint: 'bg-brand/10' },
-  { key: 'urgent_care',    label: 'Urgent care',  icon: 'local_hospital',   activeBg: 'bg-caution',  tint: 'bg-caution/12' },
-  { key: 'emergency_room', label: 'Emergency',    icon: 'emergency',        activeBg: 'bg-danger',   tint: 'bg-danger/12' },
 ];
 
 const SOAP_BLOCKS = [
@@ -81,7 +75,7 @@ function Row({ icon, iconClass, label, children }: { icon: string; iconClass: st
     <div className="grid grid-cols-[52px_1fr] gap-5 py-5 border-t border-line">
       <div className="flex flex-col items-center gap-1.5 pt-0.5">
         <Icon name={icon} className={`text-[25px] ${iconClass}`} />
-        <span className="text-[7.5px] font-semibold uppercase tracking-[.12em] text-faint">{label}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[.12em] text-faint">{label}</span>
       </div>
       <div className="min-w-0">{children}</div>
     </div>
@@ -218,7 +212,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
           <div className={`border-t-4 ${HEADER_ACCENT[note.risk_level] ?? HEADER_ACCENT.none} px-6 sm:px-8 py-6 border-b border-line`}>
             <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[9px] font-semibold uppercase tracking-[.2em] text-faint mr-1">Risk</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[.2em] text-faint mr-1">Risk</span>
                 {RISK_PILLS.map(({ level, active, hover }) => (
                   <button
                     key={level}
@@ -274,7 +268,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                 <button
                   onClick={approve}
                   disabled={saving}
-                  className="flex items-center gap-2 px-5 py-3 bg-positive text-bright text-[11px] font-bold transition-all duration-200 hover:[background:var(--grad-hover)] disabled:bg-line disabled:text-faint"
+                  className="flex items-center gap-2 px-5 py-3 bg-positive text-bright text-[11px] font-bold transition-all duration-200 hover:bg-ink disabled:bg-line disabled:text-faint"
                 >
                   {saving ? (
                     <>
@@ -296,7 +290,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
           <div className="flex items-center gap-3.5 bg-caution/12 border-l-4 border-caution px-5 py-3">
             <Icon name="warning" className="text-[22px] text-caution" />
             <span className="text-xs font-semibold text-caution">
-              AI-generated draft — review and edit before clinical use.
+              AI-generated draft. Review and edit before clinical use.
             </span>
           </div>
 
@@ -374,7 +368,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                           i === activeCareIdx ? (
                             <div key={l.key} className={`flex-[1.7] px-1 py-2.5 ${l.activeBg} flex flex-col items-center justify-center gap-1.5`}>
                               <Icon name={l.icon} className="text-[20px] text-bright" />
-                              <span className="text-[9px] font-bold text-bright text-center leading-none">{l.label}</span>
+                              <span className="text-[11px] font-bold text-bright text-center leading-none">{l.label}</span>
                             </div>
                           ) : (
                             <div key={l.key} className={`flex-1 px-1 py-2.5 ${l.tint} flex items-center justify-center`} title={l.label}>
@@ -386,7 +380,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                       <p className="mt-3.5 text-[13px] leading-relaxed text-body">{note.care_recommendation.reasoning}</p>
                       {note.care_recommendation.red_flags_to_watch?.length > 0 && (
                         <div className="mt-3.5 pt-3 border-t border-line">
-                          <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[.16em] text-danger">
+                          <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.16em] text-danger">
                             <Icon name="emergency" className="text-[16px]" />
                             Escalate if
                           </span>
@@ -403,11 +397,11 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                   {note.coverage && (
                     <div className="bg-brand p-4">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[.18em] text-bright/85">
+                        <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.18em] text-bright/85">
                           <Icon name="shield" className="text-[16px]" />
                           Coverage &amp; cost
                         </span>
-                        <span className="text-[8px] font-semibold uppercase tracking-[.14em] text-bright/60 border border-bright/30 px-1.5 py-0.5">
+                        <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60 border border-bright/30 px-1.5 py-0.5">
                           {note.coverage.source === 'stedi' ? 'Stedi' : 'Synthetic'}
                         </span>
                       </div>
@@ -418,21 +412,21 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                       </div>
                       <div className="mt-3.5 grid grid-cols-3 gap-px bg-bright/20">
                         <div className="bg-brand p-2.5">
-                          <div className="text-[7.5px] font-semibold uppercase tracking-[.14em] text-bright/60">Copay</div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60">Copay</div>
                           <div className="mt-1 font-numeral font-light text-[25px] leading-none text-bright">
-                            {note.coverage.copay != null ? `$${note.coverage.copay}` : '—'}
+                            {note.coverage.copay != null ? formatCostRange({ min: note.coverage.copay, max: note.coverage.copay }) : 'None'}
                           </div>
                         </div>
                         <div className="bg-brand p-2.5">
-                          <div className="text-[7.5px] font-semibold uppercase tracking-[.14em] text-bright/60">Deduct.</div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60">Deductible</div>
                           <div className="mt-1 font-numeral font-light text-[25px] leading-none text-bright">
-                            {note.coverage.deductible_remaining != null ? `$${note.coverage.deductible_remaining}` : '—'}
+                            {note.coverage.deductible_remaining != null ? formatCostRange({ min: note.coverage.deductible_remaining, max: note.coverage.deductible_remaining }) : 'None'}
                           </div>
                         </div>
                         <div className="bg-brand p-2.5">
-                          <div className="text-[7.5px] font-semibold uppercase tracking-[.14em] text-bright/60">Visit</div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60">Visit</div>
                           <div className="mt-1 font-numeral font-light text-[25px] leading-none text-bright">
-                            ${note.coverage.estimated_visit_cost.min}–{note.coverage.estimated_visit_cost.max}
+                            {formatCostRange(note.coverage.estimated_visit_cost)}
                           </div>
                         </div>
                       </div>
@@ -488,7 +482,7 @@ export default function NoteDetailPage({ params }: { params: Promise<{ noteId: s
                     >
                       <span className={`w-8 h-8 flex items-center justify-center font-extrabold text-sm ${box}`}>{letter}</span>
                       <div>
-                        <span className={`text-[9px] font-bold uppercase tracking-[.18em] ${labelCls}`}>{label}</span>
+                        <span className={`text-[11px] font-bold uppercase tracking-[.18em] ${labelCls}`}>{label}</span>
                         <p className="mt-1.5 text-sm leading-relaxed text-ink/85">{note[key] || 'Not available.'}</p>
                       </div>
                     </div>

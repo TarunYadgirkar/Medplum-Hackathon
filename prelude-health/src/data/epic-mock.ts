@@ -81,10 +81,10 @@ export type EpicImportResult = typeof EPIC_FHIR_MOCK;
 export type LabFlag = 'NORMAL' | 'HIGH_NORMAL' | 'ELEVATED' | 'BORDERLINE' | 'HIGH' | 'LOW';
 
 export const LAB_FLAG_STYLES: Record<string, string> = {
-  NORMAL: 'bg-emerald-50 text-emerald-600',
-  HIGH_NORMAL: 'bg-amber-50 text-amber-600',
-  ELEVATED: 'bg-amber-50 text-amber-600',
-  BORDERLINE: 'bg-amber-50 text-amber-600',
-  HIGH: 'bg-red-50 text-red-600',
-  LOW: 'bg-red-50 text-red-600',
+  NORMAL: 'bg-positive/10 text-positive',
+  HIGH_NORMAL: 'bg-caution/10 text-caution',
+  ELEVATED: 'bg-caution/10 text-caution',
+  BORDERLINE: 'bg-caution/10 text-caution',
+  HIGH: 'bg-danger/[0.07] text-danger',
+  LOW: 'bg-danger/[0.07] text-danger',
 };

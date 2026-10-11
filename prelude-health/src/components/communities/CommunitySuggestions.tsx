@@ -38,11 +38,11 @@ function RedditIcon({ size = 16 }: { size?: number }) {
 }
 
 const COMMUNITY_WARNINGS = [
-  'These are public Reddit communities — posts are personal experiences from strangers, not medical advice.',
+  'These are public Reddit communities. Posts are personal experiences from strangers, not medical advice.',
   'Content is not reviewed by clinicians and may be inaccurate or not apply to your situation.',
   'Never start, stop, or change medications or treatment based on what you read there.',
-  'If you post, avoid sharing personal health details — Reddit is public and searchable.',
-  'For emergencies call 911 (or 988 for a mental health crisis) — never wait on an online forum.',
+  'If you post, leave out personal health details. Reddit is public and searchable.',
+  'In an emergency call 911, or 988 for a mental health crisis. Never wait on an online forum.',
 ];
 
 function formatMembers(count: number | null): string | null {
@@ -92,7 +92,7 @@ export function CommunitySuggestions({ summary, riskFlags }: Props) {
     >
       <p className="text-sm text-body leading-relaxed">
         Optionally find peer-support communities on Reddit where others discuss similar
-        experiences. We&apos;ll only look this up when you ask &mdash; and these are peer
+        experiences. Prelude looks this up only when you ask, and these are peer
         stories, never medical advice.
       </p>
 
@@ -109,7 +109,7 @@ export function CommunitySuggestions({ summary, riskFlags }: Props) {
       )}
 
       {status === 'error' && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-4" role="status">
+        <div className="bg-danger/[0.07] border border-danger/25 text-danger text-sm p-4" role="status">
           Couldn&apos;t look up communities right now. Your provider and the steps above remain
           your best next move.
         </div>
@@ -117,7 +117,7 @@ export function CommunitySuggestions({ summary, riskFlags }: Props) {
 
       {status === 'done' && communities.length === 0 && (
         <p className="text-sm italic text-faint" role="status" aria-live="polite">
-          No matching communities found &mdash; that&apos;s okay. Your provider and the steps
+          No matching communities found. Your provider and the steps
           above remain your best next move.
         </p>
       )}
@@ -127,21 +127,21 @@ export function CommunitySuggestions({ summary, riskFlags }: Props) {
           <div
             role="note"
             aria-label="Important warnings about online communities"
-            className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-1.5"
+            className="bg-caution/10 border border-caution/25 p-3.5 space-y-1.5"
           >
-            <p className="text-xs font-bold uppercase tracking-wider text-amber-800">
+            <p className="text-xs font-bold uppercase tracking-wider text-caution">
               ⚠ Before you visit these communities
             </p>
             <ul className="space-y-1">
               {COMMUNITY_WARNINGS.map((w) => (
-                <li key={w} className="flex gap-1.5 text-xs font-medium leading-relaxed text-amber-700">
+                <li key={w} className="flex gap-1.5 text-xs font-medium leading-relaxed text-caution">
                   <span className="shrink-0">·</span>
                   {w}
                 </li>
               ))}
             </ul>
             {disclaimer && (
-              <p className="text-xs font-medium leading-relaxed text-amber-700 border-t border-amber-200 pt-1.5">
+              <p className="text-xs font-medium leading-relaxed text-caution border-t border-caution/25 pt-1.5">
                 {disclaimer}
               </p>
             )}
@@ -151,7 +151,7 @@ export function CommunitySuggestions({ summary, riskFlags }: Props) {
             {communities.map((community) => {
               const members = formatMembers(community.members);
               return (
-                <li key={community.name} className="bg-surface border border-line rounded-xl p-4">
+                <li key={community.name} className="bg-surface border border-line p-4">
                   <div className="flex items-center justify-between gap-3">
                     <span className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
                       <RedditIcon /> r/{community.name}

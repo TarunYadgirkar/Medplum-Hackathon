@@ -97,7 +97,7 @@ export default function RecordsPage() {
             </p>
           </div>
 
-          <div className="w-full max-w-sm rounded-2xl border border-line bg-white p-6 shadow-sm">
+          <div className="w-full max-w-sm border border-line bg-white p-6 shadow-sm">
             <ul className="flex flex-col gap-4">
               <li className="flex flex-col items-start gap-1.5 text-left">
                 <MicroLabel>From your health system</MicroLabel>
@@ -194,7 +194,7 @@ export default function RecordsPage() {
                   <p className="mt-0.5 text-xs text-faint">{lab.reference}</p>
                 </div>
                 <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${LAB_FLAG_STYLES[lab.flag] ?? 'bg-slate-100 text-slate-500'}`}
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${LAB_FLAG_STYLES[lab.flag] ?? 'bg-ink/5 text-faint'}`}
                 >
                   {lab.flag.replace('_', ' ')}
                 </span>

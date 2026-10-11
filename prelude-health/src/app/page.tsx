@@ -1,146 +1,85 @@
 import Link from 'next/link';
-import { Icon } from '@/components/primitives';
+import { Icon, Wordmark } from '@/components/primitives';
 import CoverageBot from '@/components/coverage-bot/CoverageBot';
-import VoiceOrb from '@/components/voice-orb/VoiceOrb';
+import CheckInPreview from '@/components/landing/CheckInPreview';
 
-const PIPELINE = [
-  { icon: 'mic', label: 'Talk', vendor: 'Deepgram' },
-  { icon: 'hub', label: 'Charted', vendor: 'Medplum' },
-  { icon: 'payments', label: 'Costed', vendor: 'Stedi' },
-  { icon: 'history', label: 'Recalled', vendor: 'Moss' },
+const PATIENT_TOOLS = [
+  { href: '/card', icon: 'id_card', label: 'See a sample Care Card' },
+  { href: '/medcard', icon: 'medication', label: 'My Med Card' },
+  { href: '/records', icon: 'folder_shared', label: 'My health records' },
+  { href: '/timeline', icon: 'timeline', label: 'Log a symptom' },
 ] as const;
 
 export default function Home() {
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-surface via-[#e6ddca] to-[#e8d2c6] flex flex-col">
-      {/* Nav */}
-      <div className="flex items-center justify-between px-6 sm:px-11 py-4 border-b border-line">
-        <span className="flex items-center gap-3">
-          <span className="flex gap-1" aria-hidden>
-            <span className="w-3.5 h-3.5 bg-brand inline-block" />
-            <span className="w-3.5 h-3.5 rounded-full inline-block" style={{ background: 'var(--grad-hover)' }} />
-          </span>
-          <span className="font-extrabold text-xl text-ink tracking-tight">Prelude</span>
-        </span>
-        <span className="hidden sm:flex items-center gap-2 text-[9.5px] font-semibold uppercase tracking-[.2em] text-body">
-          <Icon name="bolt" className="text-[16px]" />
-          YC × Medplum · Aug 1 2026
-        </span>
-      </div>
+    <div className="min-h-dvh bg-surface flex flex-col">
+      <header className="flex items-center justify-between gap-4 px-4 sm:px-11 py-4 border-b border-line bg-bright">
+        <Wordmark />
+        <Link href="/dashboard" className="flex items-center gap-2 text-[13px] font-semibold text-brand hover:text-ink">
+          <Icon name="stethoscope" className="text-[18px]" />
+          Clinician view
+        </Link>
+      </header>
 
-      <main className="flex-1 grid lg:grid-cols-[1fr_460px] min-h-0">
-        {/* Left: content */}
-        <div className="px-6 sm:px-11 pt-10 sm:pt-12 pb-8 border-r-0 lg:border-r border-line flex flex-col">
-          <div className="flex items-center gap-2.5 text-danger">
-            <Icon name="graphic_eq" className="text-[20px]" />
-            <span className="text-[10px] font-bold uppercase tracking-[.24em]">Voice-first pre-visit intake</span>
+      <main className="flex-1 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)]">
+        <div className="px-4 sm:px-11 pt-10 sm:pt-16 pb-24 lg:pb-12 flex flex-col gap-10">
+          <div className="flex flex-col gap-5">
+            <h1 className="font-extrabold text-[40px] sm:text-[56px] lg:text-[64px] leading-[1] tracking-[-0.028em] text-ink max-w-[14ch] text-balance">
+              The visit starts before the doctor walks in.
+            </h1>
+            <p className="max-w-[58ch] text-[17px] leading-relaxed text-body">
+              Talk with Prelude for about three minutes before your appointment. It writes what you
+              say into your chart as you speak, tells you what the visit costs on your plan, and gives
+              your clinician a draft note to review.
+            </p>
           </div>
 
-          <h1 className="mt-5 font-extrabold text-[42px] sm:text-[56px] lg:text-[68px] leading-[0.98] tracking-[-0.028em] text-ink max-w-xl text-balance">
-            The visit starts before the doctor walks in.
-          </h1>
-
-          <p className="mt-5 max-w-lg text-[15.5px] leading-relaxed text-body">
-            Three minutes of talking becomes a real FHIR record, a live coverage answer, and a
-            draft SOAP note waiting for the provider.
-          </p>
-
-          {/* Pipeline tiles */}
-          <div className="mt-7 flex flex-wrap gap-px bg-line border border-line max-w-xl">
-            {PIPELINE.map((step) => (
-              <div
-                key={step.label}
-                className="flex-1 min-w-[96px] bg-panel/70 p-4 flex flex-col gap-2 transition-all duration-200 hover:bg-ink hover:text-bright group"
-              >
-                <Icon name={step.icon} className="text-[22px] text-ink group-hover:text-bright" />
-                <span className="font-bold text-xs">{step.label}</span>
-                <span className="text-[8.5px] font-semibold uppercase tracking-[.16em] opacity-60">{step.vendor}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Primary CTAs */}
-          <div className="mt-auto pt-8 grid sm:grid-cols-2 border-t border-line -mx-6 sm:mx-0">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Link
               href="/intake"
-              className="group flex flex-col gap-3 px-6 sm:px-0 sm:pl-0 sm:pr-6 py-6 border-b sm:border-b-0 sm:border-r border-line transition-all duration-200 hover:bg-caution/10 hover:shadow-[inset_0_-5px_0_var(--color-caution)] hover:-translate-y-0.5"
+              className="flex items-center justify-center gap-2.5 bg-ink text-bright font-bold text-[15px] px-7 py-4 transition-colors duration-200 hover:bg-brand"
             >
-              <Icon name="person" className="text-[32px] text-danger" />
-              <span className="font-extrabold text-2xl tracking-tight text-ink">I&apos;m a patient</span>
-              <span className="flex items-center gap-2 text-[11px] font-semibold text-body">
-                ~3 min · voice only <Icon name="arrow_forward" className="text-[16px]" />
-              </span>
+              <Icon name="mic" className="text-[20px]" />
+              Start a check-in
             </Link>
             <Link
               href="/dashboard"
-              className="group flex flex-col gap-3 px-6 sm:px-6 py-6 transition-all duration-200 hover:bg-brand/10 hover:shadow-[inset_0_-5px_0_var(--color-brand)] hover:-translate-y-0.5"
+              className="flex items-center justify-center gap-2.5 bg-bright text-ink font-bold text-[15px] px-7 py-4 shadow-[inset_0_0_0_1px_var(--color-line)] transition-colors duration-200 hover:bg-panel"
             >
-              <Icon name="stethoscope" className="text-[32px] text-brand" />
-              <span className="font-extrabold text-2xl tracking-tight text-ink">I&apos;m a provider</span>
-              <span className="flex items-center gap-2 text-[11px] font-semibold text-body">
-                Review the queue <Icon name="arrow_forward" className="text-[16px]" />
-              </span>
+              Review the patient queue
             </Link>
           </div>
 
-          {/* Secondary links: preserved from prior lanes */}
-          <div className="mt-px grid sm:grid-cols-2 border border-line border-t-0">
-            <Link
-              href="/medcard"
-              className="group flex items-center justify-between gap-3 px-6 py-4 border-b border-line sm:border-b-0 sm:border-r transition-all duration-200 hover:bg-ink hover:text-bright"
-            >
-              <span className="text-sm font-bold">My Med Card</span>
-              <Icon name="arrow_forward" className="text-[16px]" />
-            </Link>
-            <Link
-              href="/records"
-              className="group flex items-center justify-between gap-3 px-6 py-4 transition-all duration-200 hover:bg-ink hover:text-bright"
-            >
-              <span className="text-sm font-bold">My health records</span>
-              <Icon name="arrow_forward" className="text-[16px]" />
-            </Link>
-            <Link
-              href="/timeline"
-              className="group flex items-center justify-between gap-3 px-6 py-4 border-t border-line sm:col-span-2 transition-all duration-200 hover:bg-ink hover:text-bright"
-            >
-              <span className="text-sm font-bold">Log a symptom on my timeline</span>
-              <Icon name="arrow_forward" className="text-[16px]" />
-            </Link>
-          </div>
+          <nav aria-label="Patient tools" className="grid sm:grid-cols-2 gap-px bg-line max-w-2xl shadow-[0_0_0_1px_var(--color-line)]">
+            {PATIENT_TOOLS.map((tool) => (
+              <Link
+                key={tool.href}
+                href={tool.href}
+                className="group flex items-center gap-3 bg-panel px-5 py-4 text-[14px] font-semibold text-ink transition-colors duration-200 hover:bg-bright"
+              >
+                <Icon name={tool.icon} className="text-[20px] text-brand" />
+                <span className="flex-1">{tool.label}</span>
+                <Icon name="arrow_forward" className="text-[18px] text-faint transition-transform duration-200 group-hover:translate-x-0.5" />
+              </Link>
+            ))}
+          </nav>
+
+          <p className="mt-auto flex items-start gap-2.5 max-w-[62ch] text-[13px] leading-relaxed text-body">
+            <Icon name="emergency" className="text-[18px] text-danger shrink-0" />
+            <span>
+              Prelude gathers information and does not diagnose. In an emergency call{' '}
+              <strong className="text-danger">911</strong>, or <strong className="text-danger">988</strong> for a
+              mental health crisis. All patients and plans here are synthetic.
+            </span>
+          </p>
         </div>
 
-        {/* Right: voice visual + info tiles */}
-        <div className="relative flex flex-col min-h-[420px] lg:min-h-0">
-          <div className="relative aspect-square bg-gradient-to-br from-ink via-[#3a1f1c] to-[#6b2f22] overflow-hidden flex items-center justify-center shrink-0">
-            <VoiceOrb mode="sim" size={220} hoverInteractive className="scale-[.82] sm:scale-100" />
-          </div>
-
-          <div className="flex-1 flex flex-col">
-            <div className="flex-1 flex flex-col divide-y divide-line border-t border-line bg-panel/60">
-              <div className="flex items-center gap-3 px-6 py-4">
-                <Icon name="mic" className="text-[20px] text-ink shrink-0" />
-                <span className="text-[11.5px] font-semibold text-body">~3 min · voice only</span>
-              </div>
-              <div className="flex items-center gap-3 px-6 py-4">
-                <Icon name="hub" className="text-[20px] text-ink shrink-0" />
-                <span className="text-[11.5px] font-semibold text-body">Charted to FHIR as you speak</span>
-              </div>
-              <div className="flex items-center gap-3 px-6 py-4">
-                <Icon name="payments" className="text-[20px] text-ink shrink-0" />
-                <span className="text-[11.5px] font-semibold text-body">Coverage answered live</span>
-              </div>
-            </div>
-
-            <div className="flex gap-3.5 px-6 py-4 border-t border-line bg-panel/60 items-center">
-              <Icon name="emergency" className="text-[22px] text-danger shrink-0" />
-              <p className="text-[11.5px] leading-relaxed text-body">
-                Not a clinician · synthetic data only.{' '}
-                <span className="font-bold text-danger">Emergency 911 · Crisis 988</span>
-              </p>
-            </div>
-          </div>
-        </div>
+        <CheckInPreview />
       </main>
+
+      <footer className="px-4 sm:px-11 py-4 border-t border-line text-[12px] text-faint">
+        Built on Medplum FHIR with Deepgram voice, Stedi eligibility and Moss retrieval. YC × Medplum hackathon, Aug 2026.
+      </footer>
       <CoverageBot />
     </div>
   );

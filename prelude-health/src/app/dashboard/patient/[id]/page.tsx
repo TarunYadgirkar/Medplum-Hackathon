@@ -305,7 +305,7 @@ function HeaderChip({ icon, children, tone = 'neutral' }: {
 function GroupRule({ label, count, isToday }: { label: string; count: number; isToday: boolean }) {
   return (
     <div className="flex items-center gap-3.5">
-      <span className={`text-[9.5px] font-bold uppercase tracking-[.22em] ${isToday ? 'text-danger' : 'text-faint'}`}>
+      <span className={`text-[11px] font-bold uppercase tracking-[.22em] ${isToday ? 'text-danger' : 'text-faint'}`}>
         {label}
       </span>
       <span aria-hidden className={`h-px flex-1 ${isToday ? 'bg-danger/40' : 'bg-ink/20'}`} />
@@ -473,7 +473,7 @@ export default function PatientChartPage() {
             </p>
             <Link
               href="/intake"
-              className="flex items-center gap-2 bg-ink px-5 py-3 text-[11px] font-bold text-bright transition-all duration-200 hover:[background:var(--grad-hover)]"
+              className="flex items-center gap-2 bg-ink px-5 py-3 text-[11px] font-bold text-bright transition-all duration-200 hover:bg-brand"
             >
               <Icon name="mic" className="text-[17px]" />
               Start an intake
@@ -523,7 +523,7 @@ export default function PatientChartPage() {
             {row.note_id ? (
               <Link
                 href={`/dashboard/${row.note_id}`}
-                className="flex items-center gap-2 bg-ink px-5 py-3 text-[11px] font-bold text-bright transition-all duration-200 hover:[background:var(--grad-hover)]"
+                className="flex items-center gap-2 bg-ink px-5 py-3 text-[11px] font-bold text-bright transition-all duration-200 hover:bg-brand"
               >
                 <Icon name="description" className="text-[18px]" />
                 Open latest note
@@ -657,7 +657,7 @@ function TimelineView({ groups }: { groups: Group[] }) {
                     )}
                     <span className="text-[15px] font-bold leading-snug text-ink">{event.title}</span>
                     {event.chip && (
-                      <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] ${event.chip.cls}`}>
+                      <span className={`px-2 py-0.5 text-[11px] font-bold uppercase tracking-[.1em] ${event.chip.cls}`}>
                         {event.chip.label}
                       </span>
                     )}
@@ -771,7 +771,7 @@ function CalendarView({ events, today }: { events: ChartEvent[]; today: DatePart
         >
           <div className="grid grid-cols-7 border-b border-line bg-surface">
             {WEEKDAYS.map((day) => (
-              <span key={day} className="py-2 text-center text-[9px] font-semibold uppercase tracking-[.18em] text-faint">
+              <span key={day} className="py-2 text-center text-[11px] font-semibold uppercase tracking-[.18em] text-faint">
                 {day}
               </span>
             ))}
@@ -809,7 +809,7 @@ function CalendarView({ events, today }: { events: ChartEvent[]; today: DatePart
                       {cell.d}
                     </span>
                     {isToday && (
-                      <span className="text-[8px] font-semibold uppercase tracking-[.14em] text-bright/70">Today</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/70">Today</span>
                     )}
                   </span>
                   {shown.length > 0 && (
@@ -822,14 +822,14 @@ function CalendarView({ events, today }: { events: ChartEvent[]; today: DatePart
                         />
                       ))}
                       {dayEvents.length > 3 && (
-                        <span className={`text-[9px] font-bold ${isToday ? 'text-bright/75' : 'text-body'}`}>
+                        <span className={`text-[11px] font-bold ${isToday ? 'text-bright/75' : 'text-body'}`}>
                           +{dayEvents.length - 3}
                         </span>
                       )}
                     </span>
                   )}
                   {dayEvents.length > 0 && (
-                    <span className={`text-[9px] font-semibold ${isToday ? 'text-bright/75' : 'text-faint'}`}>
+                    <span className={`text-[11px] font-semibold ${isToday ? 'text-bright/75' : 'text-faint'}`}>
                       {dayEvents.length === 1
                         ? dayEvents[0].title.length > 18
                           ? `${dayEvents[0].title.slice(0, 18)}…`
@@ -852,7 +852,7 @@ function CalendarView({ events, today }: { events: ChartEvent[]; today: DatePart
                   ? `${WEEKDAYS_FULL[new Date(selected.y, selected.m, selected.d ?? 1).getDay()]}, ${MONTHS_SHORT[selected.m]} ${selected.d}`
                   : 'Pick a day'}
               </div>
-              <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-[.16em] text-faint">
+              <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[.16em] text-faint">
                 {selected
                   ? `${selEvents.length} ${selEvents.length === 1 ? 'event' : 'events'}${selIsToday ? ' · today' : ''}`
                   : 'Click a day in the grid'}
@@ -884,7 +884,7 @@ function CalendarView({ events, today }: { events: ChartEvent[]; today: DatePart
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="text-sm font-bold text-ink">{event.title}</span>
                     {event.chip && (
-                      <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] ${event.chip.cls}`}>
+                      <span className={`px-2 py-0.5 text-[11px] font-bold uppercase tracking-[.1em] ${event.chip.cls}`}>
                         {event.chip.label}
                       </span>
                     )}
@@ -903,7 +903,7 @@ function CalendarView({ events, today }: { events: ChartEvent[]; today: DatePart
           </div>
           <div className="flex items-center gap-2 border-t border-line px-4 py-2.5">
             <Icon name="keyboard" className="text-[16px] text-faint" />
-            <span className="text-[9px] font-medium uppercase tracking-[.14em] text-faint">
+            <span className="text-[11px] font-medium uppercase tracking-[.14em] text-faint">
               Arrow keys move days
             </span>
           </div>

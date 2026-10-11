@@ -192,7 +192,7 @@ export function ChartTimeline({ record }: { record: EpicImportResult }) {
         {groups.map((group) => (
           <section key={group.label} aria-label={group.label}>
             <div className="flex items-center gap-3.5">
-              <p className="text-[9.5px] font-bold uppercase tracking-[.22em] text-faint">{group.label}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[.22em] text-faint">{group.label}</p>
               <div aria-hidden="true" className="h-px flex-1 bg-ink/20" />
               <span className="border border-ink/20 px-2 py-0.5 text-[10px] font-semibold text-body font-numeral">
                 {group.events.length}
@@ -215,7 +215,7 @@ export function ChartTimeline({ record }: { record: EpicImportResult }) {
                     <p className="text-sm font-bold leading-snug text-ink">{event.title}</p>
                     {event.chip && (
                       <span
-                        className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] ${event.chip.cls}`}
+                        className={`px-2 py-0.5 text-[11px] font-bold uppercase tracking-[.1em] ${event.chip.cls}`}
                       >
                         {event.chip.label}
                       </span>

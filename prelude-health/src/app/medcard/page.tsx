@@ -54,8 +54,8 @@ export default function MedCardPage() {
 
           <SectionCard title="Import from your health record">
             <p className="text-sm text-body leading-relaxed">
-              Connect your Epic MyChart to pre-fill your medications, allergies, and conditions —
-              they land on this card automatically.
+              Connect Epic MyChart to fill in your medications, allergies and conditions. They appear on
+              this card automatically.
             </p>
             <ConnectHealthRecordsButton />
           </SectionCard>

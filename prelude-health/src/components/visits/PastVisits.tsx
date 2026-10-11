@@ -73,7 +73,7 @@ export function PastVisits({ patientName, currentNoteId }: PastVisitsProps) {
             {visit.note_id ? (
               <Link
                 href={`/dashboard/${visit.note_id}`}
-                className="block hover:bg-surface rounded-lg -mx-2 px-2 transition-colors"
+                className="block hover:bg-surface -mx-2 px-2 transition-colors"
               >
                 {row}
               </Link>

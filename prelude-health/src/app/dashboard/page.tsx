@@ -66,7 +66,7 @@ function StatTile({ label, value, tone }: { label: string; value: number; tone: 
     <div className={`bg-panel p-5 flex items-center gap-4 transition-colors hover:bg-bright ${tone.accent ? `border-t-4 ${tone.accent}` : ''}`}>
       <Icon name={tone.icon} className={`text-[32px] shrink-0 ${tone.iconColor}`} />
       <div>
-        <p className={`text-[9.5px] font-semibold uppercase tracking-[.2em] ${tone.labelColor}`}>{label}</p>
+        <p className={`text-[11px] font-semibold uppercase tracking-[.2em] ${tone.labelColor}`}>{label}</p>
         <p className={`font-numeral text-[40px] sm:text-[44px] leading-none mt-1.5 ${tone.valueColor}`}>{value}</p>
       </div>
     </div>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-positive animate-pulse" />
-              <span className="text-[9.5px] font-semibold uppercase tracking-[.18em] text-body">Live</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[.18em] text-body">Live</span>
             </div>
             <div className="flex items-center gap-2.5">
               <span className="w-7 h-7 bg-ink text-bright flex items-center justify-center">
@@ -125,7 +125,7 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <Icon name="groups" className="text-[19px] text-danger" />
-                <span className="text-[9.5px] font-semibold uppercase tracking-[.22em] text-faint">Auto-refreshes every 5s</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[.22em] text-faint">Auto-refreshes every 5s</span>
               </div>
               <h1 className="mt-3 font-extrabold text-[38px] sm:text-[46px] leading-[0.96] tracking-[-.03em] text-ink">
                 Patient intake queue
@@ -227,7 +227,7 @@ export default function DashboardPage() {
               const viewButton = patient.note_id ? (
                 <Link
                   href={`/dashboard/${patient.note_id}`}
-                  className="w-9 h-9 flex items-center justify-center bg-ink text-bright transition-all duration-200 hover:[background:var(--grad-hover)]"
+                  className="w-9 h-9 flex items-center justify-center bg-ink text-bright transition-all duration-200 hover:bg-brand"
                   title="View note"
                 >
                   <Icon name="visibility" className="text-[18px]" />

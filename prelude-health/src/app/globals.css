@@ -1,30 +1,30 @@
 @import "tailwindcss";
 
-/* ── Design-language tokens ─────────────────────────────────────────────
-   Values from the Claude Design handoff (docs/UI_SPEC.md · "Prelude UI
-   Handoff.dc.html"). Everything routes through these + primitives.tsx —
-   never inline hex in pages.
-   Ink 17161A · paper EDEAE2 · panel F7F5EF · bright FCFBF7 ·
-   brand 23407F · danger A8342B · caution B8862B · positive 2E5F52 ·
-   hover gradient B8862B→A8342B · RADIUS 0 EVERYWHERE (circles are
-   reserved for the voice UI). */
+/* ── Design tokens ─────────────────────────────────────────────────────
+   Clinical and calm: a cool ward grey tinted toward the chart navy, ink with
+   a navy cast, and semantic colors kept apart from the brand. Radius 0
+   everywhere except the voice UI, which owns the circles. Never inline hex in
+   pages; route through these tokens and primitives.tsx. */
 @theme {
   --color-brand: #23407f;
   --color-brand-dark: #1a3163;
-  --color-brand-accent: #b8862b;
-  --color-brand-light: #dfe5f2;
+  --color-brand-light: #dde4f1;
 
-  --color-ink: #17161a;
-  --color-body: rgb(23 22 26 / 0.68);
-  --color-faint: rgb(23 22 26 / 0.5);
-  --color-line: rgb(23 22 26 / 0.16);
-  --color-surface: #edeae2;
-  --color-panel: #f7f5ef;
-  --color-bright: #fcfbf7;
+  --color-ink: #131a26;
+  --color-body: rgb(19 26 38 / 0.74);
+  --color-faint: rgb(19 26 38 / 0.62);
+  --color-line: rgb(19 26 38 / 0.14);
+  --color-surface: #e8ecf1;
+  --color-panel: #f3f5f8;
+  --color-bright: #fbfcfd;
 
-  --color-danger: #a8342b;
-  --color-caution: #b8862b;
-  --color-positive: #2e5f52;
+  /* Dark voice stage */
+  --color-stage: #0f1b33;
+  --color-stage-glow: #3d6fb8;
+
+  --color-danger: #b0362c;
+  --color-caution: #845c0e;
+  --color-positive: #2a6656;
 
   --font-sans: var(--font-archivo), system-ui, sans-serif;
   --font-numeral: var(--font-jost), sans-serif;
@@ -32,25 +32,12 @@
 }
 
 :root {
-  /* Legacy aliases (pre-handoff code paths) */
-  --teal: #23407f;
-  --teal-dark: #1a3163;
-  --teal-accent: #b8862b;
-  --teal-light: #dfe5f2;
-  --ink: #17161a;
-  --muted: rgb(23 22 26 / 0.68);
-  --border: rgb(23 22 26 / 0.16);
-  --surface: #edeae2;
-
-  /* Motion */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  /* Hover treatment for primary actions */
-  --grad-hover: linear-gradient(135deg, #b8862b, #a8342b);
 }
 
 body {
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--color-surface);
+  color: var(--color-ink);
   font-feature-settings: "ss01", "cv01";
 }
 
@@ -142,4 +129,32 @@ body {
 
 .animate-breathe {
   animation: breathe 2.2s ease-in-out infinite;
+}
+
+/* Visible focus for every keyboard-reachable control. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Landing check-in preview: the one orchestrated load sequence. */
+@keyframes reveal-line {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.reveal-line {
+  opacity: 0;
+  animation: reveal-line 0.6s var(--ease-out-expo) forwards;
+  animation-delay: var(--reveal-delay, 0s);
 }

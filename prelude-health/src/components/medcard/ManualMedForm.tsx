@@ -13,7 +13,7 @@ type Fields = {
 const EMPTY_FIELDS: Fields = { name: '', dosage: '', frequency: '' };
 
 const INPUT_CLASS =
-  'w-full rounded-xl px-3 py-2.5 text-sm bg-surface border border-line text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-light transition-colors';
+  'w-full px-3 py-2.5 text-sm bg-surface border border-line text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-light transition-colors';
 
 export function ManualMedForm({ onSaved }: { onSaved?: () => void }) {
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
@@ -78,7 +78,7 @@ export function ManualMedForm({ onSaved }: { onSaved?: () => void }) {
         {savedName && (
           <div
             role="status"
-            className="flex items-center gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-medium text-emerald-700"
+            className="flex items-center gap-2.5 bg-positive/10 border border-positive/25 px-4 py-3 text-sm font-medium text-positive"
           >
             <svg
               viewBox="0 0 24 24"

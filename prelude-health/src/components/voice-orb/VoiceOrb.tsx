@@ -125,7 +125,7 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
       }
       const rings = [
         { k: 1.0, col: '35,64,127', lw: 1.4, sp: 0.5 },
-        { k: 1.07, col: '168,52,43', lw: 1, sp: -0.32 },
+        { k: 1.07, col: '42,102,86', lw: 1, sp: -0.32 },
       ];
       rings.forEach((rg, idx) => {
         ctx.beginPath();
@@ -253,7 +253,7 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
         className="absolute"
         style={{
           width: px(300), height: px(300),
-          background: 'radial-gradient(circle,rgba(232,178,84,.4),rgba(168,52,43,.2) 52%,transparent 70%)',
+          background: 'radial-gradient(circle,rgba(122,170,230,.38),rgba(42,102,86,.2) 52%,transparent 70%)',
           filter: 'blur(40px)',
           transform: `scale(calc(.94 + var(--v,.2) * ${glowAmp}))`,
         }}
@@ -286,7 +286,7 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
             className="absolute rounded-full"
             style={{
               width: px(204), height: px(204), right: '8%', top: '22%',
-              background: 'radial-gradient(circle,rgba(168,52,43,.9),rgba(168,52,43,0) 64%)',
+              background: 'radial-gradient(circle,rgba(42,102,86,.9),rgba(42,102,86,0) 64%)',
               filter: 'blur(23px)',
               opacity: 'calc(.4 + var(--v,.2) * .55)',
               transform: 'translate3d(var(--mx,0px),var(--my,0px),0) scale(calc(.78 + var(--v,.2) * .5))',
@@ -297,7 +297,7 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
             className="absolute rounded-full"
             style={{
               width: px(210), height: px(210), left: '8%', bottom: '6%',
-              background: 'radial-gradient(circle,rgba(184,134,43,.92),rgba(184,134,43,0) 65%)',
+              background: 'radial-gradient(circle,rgba(61,111,184,.92),rgba(61,111,184,0) 65%)',
               filter: 'blur(22px)',
               opacity: 'calc(.38 + var(--v,.2) * .54)',
               transform: 'translate3d(var(--mx,0px),var(--my,0px),0) scale(calc(.8 + var(--v,.2) * .46))',
@@ -319,7 +319,7 @@ export default function VoiceOrb({ size = 220, mode = 'sim', intensity = 1, idle
         </div>
         {/* top-left sheen + bottom inner shade */}
         <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 32% 24%,rgba(252,251,247,.92),rgba(252,251,247,0) 46%)' }} />
-        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 -20px 36px rgba(23,22,26,.14)' }} />
+        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 -20px 36px rgba(19,26,38,.14)' }} />
       </div>
       {/* wobbly halo rings + syllable ripples */}
       <canvas data-ring="1" className="absolute block pointer-events-none z-[3]" style={{ width: px(340), height: px(340) }} />

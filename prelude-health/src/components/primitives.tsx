@@ -17,19 +17,22 @@ export function Icon({ name, className = 'text-[18px]' }: { name: string; classN
 
 /* ── Nav shell ── */
 
-export function Nav({ right, homeLink = true }: { right?: ReactNode; homeLink?: boolean }) {
-  const wordmark = (
-    <span className="flex items-center gap-2.5">
+export function Wordmark() {
+  return (
+    <Link href="/" className="flex items-center gap-2.5" aria-label="Prelude home">
       <span className="flex gap-1" aria-hidden>
         <span className="w-3 h-3 bg-brand inline-block" />
-        <span className="w-3 h-3 rounded-full inline-block" style={{ background: 'var(--grad-hover)' }} />
+        <span className="w-3 h-3 rounded-full inline-block bg-positive" />
       </span>
       <span className="font-extrabold text-xl text-ink tracking-tight">Prelude</span>
-    </span>
+    </Link>
   );
+}
+
+export function Nav({ right }: { right?: ReactNode }) {
   return (
-    <nav className="bg-bright border-b border-line px-6 py-4 flex items-center justify-between">
-      {homeLink ? <Link href="/">{wordmark}</Link> : wordmark}
+    <nav className="bg-bright border-b border-line px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+      <Wordmark />
       {right}
     </nav>
   );
@@ -39,7 +42,7 @@ export function Nav({ right, homeLink = true }: { right?: ReactNode; homeLink?: 
 
 const BTN_VARIANTS = {
   primary:
-    'bg-ink text-bright font-bold tracking-[.06em] transition-all duration-200 hover:[background:var(--grad-hover)] hover:tracking-[.1em] disabled:bg-line disabled:text-faint disabled:tracking-[.06em] disabled:hover:[background:var(--color-line)]',
+    'bg-ink text-bright font-bold tracking-[.06em] transition-all duration-200 hover:bg-brand disabled:bg-line disabled:text-faint disabled:hover:bg-line',
   secondary:
     'bg-transparent border border-ink/40 text-ink font-bold transition-all duration-200 hover:bg-ink hover:text-bright disabled:border-line disabled:text-faint disabled:hover:bg-transparent',
   dangerSoft:
@@ -71,7 +74,7 @@ export function SectionCard({ title, badge, children }: { title: string; badge?:
 }
 
 export function MicroLabel({ children }: { children: ReactNode }) {
-  return <p className="text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">{children}</p>;
+  return <p className="text-[12px] font-semibold text-faint">{children}</p>;
 }
 
 /* ── Badges ── */

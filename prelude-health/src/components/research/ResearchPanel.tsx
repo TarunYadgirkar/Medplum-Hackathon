@@ -59,40 +59,40 @@ const LEVEL_ORDER: ResearchCareLevel[] = [
 const LEVEL_META: Record<ResearchCareLevel, { label: string; bar: string; ring: string; chip: string }> = {
   self_monitor: {
     label: 'Self-monitor',
-    bar: 'bg-teal-400',
-    ring: 'ring-teal-300',
-    chip: 'bg-teal-50 text-teal-700 border-teal-200',
+    bar: 'bg-positive/60',
+    ring: 'ring-positive/40',
+    chip: 'bg-positive/10 text-positive border-positive/25',
   },
   telehealth: {
     label: 'Telehealth',
-    bar: 'bg-blue-400',
-    ring: 'ring-blue-300',
-    chip: 'bg-blue-50 text-blue-700 border-blue-200',
+    bar: 'bg-positive',
+    ring: 'ring-positive/50',
+    chip: 'bg-positive/10 text-positive border-positive/25',
   },
   primary_care: {
     label: 'Primary care',
-    bar: 'bg-yellow-400',
-    ring: 'ring-yellow-300',
-    chip: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    bar: 'bg-brand',
+    ring: 'ring-brand/40',
+    chip: 'bg-brand/10 text-brand border-brand/25',
   },
   urgent_care: {
     label: 'Urgent care',
-    bar: 'bg-orange-400',
-    ring: 'ring-orange-300',
-    chip: 'bg-orange-50 text-orange-700 border-orange-200',
+    bar: 'bg-caution',
+    ring: 'ring-caution/40',
+    chip: 'bg-caution/10 text-caution border-caution/25',
   },
   emergency_room: {
     label: 'Emergency room',
-    bar: 'bg-red-500',
-    ring: 'ring-red-300',
-    chip: 'bg-red-50 text-red-700 border-red-200',
+    bar: 'bg-danger',
+    ring: 'ring-danger/40',
+    chip: 'bg-danger/[0.07] text-danger border-danger/25',
   },
 };
 
 const FIT_BADGE: Record<Fit, { cls: string; label: string }> = {
-  high: { cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', label: 'High fit' },
-  medium: { cls: 'bg-amber-50 text-amber-700 border border-amber-200', label: 'Medium fit' },
-  low: { cls: 'bg-slate-100 text-slate-500 border border-slate-200', label: 'Low fit' },
+  high: { cls: 'bg-positive/10 text-positive border border-positive/25', label: 'High fit' },
+  medium: { cls: 'bg-caution/10 text-caution border border-caution/25', label: 'Medium fit' },
+  low: { cls: 'bg-ink/5 text-faint border border-line', label: 'Low fit' },
 };
 
 function normalizeCareLevel(careLevel?: string): ResearchCareLevel | null {
@@ -122,7 +122,7 @@ function CareLevelSpectrum({ recommended }: { recommended: ResearchCareLevel | n
           return (
             <div key={level} className="flex-1 min-w-0">
               <div
-                className={`rounded-md ${meta.bar} ${
+                className={` ${meta.bar} ${
                   isRecommended ? `h-5 ring-2 ring-offset-1 ${meta.ring}` : 'h-2.5 opacity-60'
                 }`}
               />
@@ -132,7 +132,7 @@ function CareLevelSpectrum({ recommended }: { recommended: ResearchCareLevel | n
                 }`}
               >
                 {meta.label}
-                {isRecommended && <span className="block text-[9px] font-semibold text-body">Recommended</span>}
+                {isRecommended && <span className="block text-[11px] font-semibold text-body">Recommended</span>}
               </p>
             </div>
           );
@@ -154,15 +154,15 @@ function RiskFlagPills({ flags }: { flags: string[] }) {
             <span
               key={flag}
               role="listitem"
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium ${
                 isHighSignal
-                  ? 'bg-red-50 text-red-600 border-red-200'
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                  ? 'bg-danger/[0.07] text-danger'
+                  : 'bg-caution/10 text-caution'
               }`}
             >
               <span
                 aria-hidden="true"
-                className={`h-1.5 w-1.5 rounded-full ${isHighSignal ? 'bg-red-400' : 'bg-amber-400'}`}
+                className={`h-1.5 w-1.5 rounded-full ${isHighSignal ? 'bg-danger' : 'bg-caution'}`}
               />
               {flag}
             </span>
@@ -187,7 +187,7 @@ function CareOptionsTable({
   return (
     <div>
       <MicroLabel>Care options &amp; estimated cost</MicroLabel>
-      <div className="mt-2 overflow-x-auto rounded-xl border border-line">
+      <div className="mt-2 overflow-x-auto border border-line">
         <table className="w-full min-w-[560px] text-left text-sm" aria-label="Care options comparison">
           <thead>
             <tr className="border-b border-line bg-surface text-[11px] font-bold uppercase tracking-widest text-faint">
@@ -211,7 +211,7 @@ function CareOptionsTable({
                   aria-current={isRecommended ? 'true' : undefined}
                 >
                   <th scope="row" className="px-4 py-3 font-semibold text-ink whitespace-nowrap">
-                    <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${meta.chip}`}>
+                    <span className={`inline-flex items-center border px-2 py-0.5 text-xs font-semibold ${meta.chip}`}>
                       {meta.label}
                     </span>
                     {isRecommended && (
@@ -290,7 +290,7 @@ export function ResearchPanel({ summary, symptoms, riskFlags, careLevel, coverag
 
         {status === 'error' && (
           <div className="space-y-2">
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-4" role="status">
+            <div className="bg-danger/[0.07] border border-danger/25 text-danger text-sm p-4" role="status">
               Couldn&apos;t run research right now. Your provider review is unaffected.
             </div>
             <Btn variant="secondary" className="px-5 py-2.5 text-sm" onClick={handleRun}>
@@ -305,7 +305,7 @@ export function ResearchPanel({ summary, symptoms, riskFlags, careLevel, coverag
               <MicroLabel>What this could involve</MicroLabel>
               <p className="mt-2 text-sm text-body leading-relaxed">{result.patient_explainer}</p>
               {result.provider_considerations.length > 0 && (
-                <div className="mt-3 rounded-xl border border-line bg-surface p-3.5">
+                <div className="mt-3 border border-line bg-surface p-3.5">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-faint">
                     For provider review
                   </p>
@@ -338,14 +338,14 @@ export function ResearchPanel({ summary, symptoms, riskFlags, careLevel, coverag
             )}
 
             {result.red_flags_to_watch.length > 0 && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3.5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">
+              <div className=" border border-danger/25 bg-danger/[0.07] p-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-danger">
                   Red flags to watch
                 </p>
                 <ul className="mt-2 space-y-1.5">
                   {result.red_flags_to_watch.map((flag, i) => (
-                    <li key={i} className="flex gap-2.5 text-sm text-red-700">
-                      <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+                    <li key={i} className="flex gap-2.5 text-sm text-danger">
+                      <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
                       <span className="leading-relaxed">{flag}</span>
                     </li>
                   ))}
@@ -356,7 +356,7 @@ export function ResearchPanel({ summary, symptoms, riskFlags, careLevel, coverag
         )}
 
         <p className="text-xs text-faint leading-relaxed">
-          AI-generated research draft &mdash; reviewed by your provider. Not medical advice.
+          AI-generated research draft for clinician review. Not medical advice.
         </p>
       </div>
     </SectionCard>

@@ -41,7 +41,7 @@ type Msg =
 type Step = 'payer' | 'member' | 'care' | 'checking' | 'result';
 
 const GREETING: Msg[] = [
-  { kind: 'bot', text: 'Hi — I can check what a visit will cost you. Estimates only, not a guarantee of coverage.' },
+  { kind: 'bot', text: 'I can check what a visit will cost on your plan. These are estimates, and your insurer has the final number.' },
   { kind: 'bot', text: "Who's your insurer?" },
 ];
 
@@ -106,11 +106,11 @@ function CoverageCard({ coverage }: { coverage: CoverageSummary }) {
   return (
     <motion.div {...bubbleIn} className="bg-brand p-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[.18em] text-bright/85">
+        <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.18em] text-bright/85">
           <Icon name="shield" className="text-[16px]" />
           Coverage
         </span>
-        <span className="text-[8px] font-semibold uppercase tracking-[.14em] text-bright/60 border border-bright/30 px-1.5 py-0.5">
+        <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60 border border-bright/30 px-1.5 py-0.5">
           {coverage.source === 'stedi' ? 'Stedi eligibility' : 'Synthetic'}
         </span>
       </div>
@@ -123,7 +123,7 @@ function CoverageCard({ coverage }: { coverage: CoverageSummary }) {
         <div className="mt-3.5 grid gap-px bg-bright/20" style={{ gridTemplateColumns: `repeat(${cells.length}, 1fr)` }}>
           {cells.map((cell) => (
             <div key={cell.label} className="bg-brand p-2.5">
-              <div className="text-[7.5px] font-semibold uppercase tracking-[.14em] text-bright/60">{cell.label}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[.14em] text-bright/60">{cell.label}</div>
               <div className="mt-1 font-numeral text-2xl leading-none text-bright">{cell.value}</div>
             </div>
           ))}
@@ -236,7 +236,7 @@ export default function CoverageBot() {
       setFailedCare(care);
       push({
         kind: 'warn',
-        text: "The payer didn't answer, so treat this as a synthetic estimate — a typical plan runs about a $20 copay for telehealth and more for higher-acuity visits. Try again in a moment for a live answer.",
+        text: "The payer didn't answer, so treat this as a synthetic estimate. A typical plan runs about a $20 copay for telehealth and more for higher-acuity visits. Try again in a moment for a live answer.",
       });
     }
     setStep('result');
@@ -270,7 +270,7 @@ export default function CoverageBot() {
           type="button"
           onClick={openBot}
           aria-haspopup="dialog"
-          className="fixed bottom-7 right-7 z-40 flex items-center gap-2.5 px-[17px] py-[13px] bg-ink text-bright text-xs font-bold shadow-[0_10px_24px_rgba(0,0,0,0.3)] transition-all duration-200 hover:[background:var(--grad-hover)] hover:-translate-y-0.5"
+          className="fixed bottom-4 right-4 sm:bottom-7 sm:right-7 z-40 flex items-center gap-2.5 px-4 py-3 sm:px-[17px] sm:py-[13px] bg-ink text-bright text-xs font-bold shadow-[0_10px_24px_rgba(0,0,0,0.3)] transition-all duration-200 hover:bg-brand hover:-translate-y-0.5"
         >
           <Icon name="forum" className="text-[20px]" />
           Ask about coverage
@@ -311,8 +311,8 @@ export default function CoverageBot() {
                 <div className="flex-1 min-w-0">
                   <div className="font-extrabold text-[15px] text-ink">Coverage assistant</div>
                   <div className="mt-0.5 flex items-center gap-2">
-                    <span className="text-[8.5px] font-medium uppercase tracking-[.16em] text-faint">Powered by Stedi</span>
-                    <span className="text-[8px] font-semibold uppercase tracking-[.14em] text-caution border border-caution/45 px-1.5 py-0.5">Test mode</span>
+                    <span className="text-[11px] font-medium uppercase tracking-[.16em] text-faint">Powered by Stedi</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-caution border border-caution/45 px-1.5 py-0.5">Test mode</span>
                   </div>
                 </div>
                 <button
@@ -343,7 +343,7 @@ export default function CoverageBot() {
                         <ChoiceChip key={p.key} onClick={() => choosePayer(p)}>{p.label}</ChoiceChip>
                       ))}
                     </div>
-                    <p className="text-[9px] font-medium uppercase tracking-[.14em] text-faint">Mock payers only · no PHI</p>
+                    <p className="text-[11px] font-medium uppercase tracking-[.14em] text-faint">Mock payers only · no PHI</p>
                   </motion.div>
                 )}
 
@@ -376,7 +376,7 @@ export default function CoverageBot() {
                       <button
                         type="button"
                         onClick={submitMemberId}
-                        className="flex items-center gap-2 px-3 py-2.5 bg-ink text-bright text-[11px] font-bold transition-all duration-200 hover:[background:var(--grad-hover)]"
+                        className="flex items-center gap-2 px-3 py-2.5 bg-ink text-bright text-[11px] font-bold transition-all duration-200 hover:bg-brand"
                       >
                         Continue
                         <Icon name="arrow_forward" className="text-[15px]" />
@@ -401,7 +401,7 @@ export default function CoverageBot() {
               {/* Follow-ups */}
               {step === 'result' && (
                 <div className="border-t border-line bg-panel p-3.5">
-                  <p className="text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">Next</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[.2em] text-faint">Next</p>
                   <div className="mt-2.5 flex flex-wrap gap-2">
                     {failedCare && (
                       <ChoiceChip icon="refresh" onClick={tryAgain}>Try again</ChoiceChip>
@@ -410,7 +410,7 @@ export default function CoverageBot() {
                     <ChoiceChip icon="swap_horiz" onClick={differentInsurer}>Different insurer</ChoiceChip>
                     <Link
                       href="/intake"
-                      className="flex items-center gap-2 px-3.5 py-2.5 bg-ink text-bright text-[11.5px] font-bold transition-all duration-200 hover:[background:var(--grad-hover)] hover:-translate-y-0.5"
+                      className="flex items-center gap-2 px-3.5 py-2.5 bg-ink text-bright text-[11.5px] font-bold transition-all duration-200 hover:bg-brand hover:-translate-y-0.5"
                     >
                       <Icon name="mic" className="text-[16px]" />
                       Start voice check-in

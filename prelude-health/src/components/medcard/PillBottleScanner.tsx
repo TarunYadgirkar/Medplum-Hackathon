@@ -20,13 +20,13 @@ type ConfirmFields = {
 };
 
 const CONFIDENCE_META: Record<ScanResult['confidence'], { cls: string; icon: string; label: string }> = {
-  low: { cls: 'bg-red-50 text-red-600 border border-red-200', icon: '⚠', label: 'Low confidence — please review carefully' },
-  medium: { cls: 'bg-amber-50 text-amber-600 border border-amber-200', icon: '▲', label: 'Medium confidence — verify before saving' },
-  high: { cls: 'bg-emerald-50 text-emerald-600 border border-emerald-200', icon: '✓', label: 'High confidence' },
+  low: { cls: 'bg-danger/[0.07] text-danger border border-danger/25', icon: '⚠', label: 'Low confidence — please review carefully' },
+  medium: { cls: 'bg-caution/10 text-caution border border-caution/25', icon: '▲', label: 'Medium confidence — verify before saving' },
+  high: { cls: 'bg-positive/10 text-positive border border-positive/25', icon: '✓', label: 'High confidence' },
 };
 
 const INPUT_CLASS =
-  'w-full rounded-xl px-3 py-2.5 text-sm bg-surface border border-line text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-light transition-colors';
+  'w-full px-3 py-2.5 text-sm bg-surface border border-line text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-light transition-colors';
 
 function formatMed(name: string, dosage: string, frequency: string): string {
   const cleanName = sanitizeField(name);
@@ -183,7 +183,7 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
         <div className="flex flex-col items-center gap-3">
           <label
             htmlFor="pill-bottle-input"
-            className="flex w-full cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-line px-8 py-10 transition-colors hover:border-brand hover:bg-brand-light"
+            className="flex w-full cursor-pointer flex-col items-center gap-3 border-2 border-dashed border-line px-8 py-10 transition-colors hover:border-brand hover:bg-brand-light"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
               <svg
@@ -224,7 +224,7 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
             <img
               src={preview}
               alt="Pill bottle being scanned"
-              className="h-32 w-32 rounded-xl object-cover border border-line shadow-sm"
+              className="h-32 w-32 object-cover border border-line shadow-sm"
             />
           )}
           <div className="flex flex-col items-center gap-2">
@@ -240,9 +240,9 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
 
       {scanState === 'unavailable' && (
         <div className="flex flex-col gap-3">
-          <div role="status" className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-            <p className="text-sm font-semibold text-amber-700">Scanner needs an OpenAI key</p>
-            <p className="mt-1 text-xs leading-relaxed text-amber-600">
+          <div role="status" className=" bg-caution/10 border border-caution/25 px-4 py-3">
+            <p className="text-sm font-semibold text-caution">Scanner needs an OpenAI key</p>
+            <p className="mt-1 text-xs leading-relaxed text-caution">
               Label scanning uses OpenAI vision, which isn&apos;t configured on this server yet.
               You can still add medications via Epic import or during your voice check-in.
             </p>
@@ -257,18 +257,18 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
         <div className="flex flex-col gap-3">
           <div
             role="status"
-            className="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3"
+            className="flex items-start gap-3 bg-positive/10 border border-positive/25 px-4 py-3"
           >
             {preview && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={preview}
                 alt="Scanned pill bottle"
-                className="h-12 w-12 shrink-0 rounded-lg object-cover border border-emerald-200"
+                className="h-12 w-12 shrink-0 object-cover border border-positive/25"
               />
             )}
             <div className="flex flex-col gap-0.5">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-positive">
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -283,8 +283,8 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
                 </svg>
                 Added to your MedCard
               </p>
-              <p className="text-xs text-emerald-600">{autoSavedLabel}</p>
-              <p className="mt-0.5 text-xs text-emerald-600/80">
+              <p className="text-xs text-positive">{autoSavedLabel}</p>
+              <p className="mt-0.5 text-xs text-positive/80">
                 Saved automatically — the label was read with high confidence.
               </p>
             </div>
@@ -308,7 +308,7 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
               <img
                 src={preview}
                 alt="Scanned pill bottle"
-                className="h-20 w-20 shrink-0 rounded-xl object-cover border border-line shadow-sm"
+                className="h-20 w-20 shrink-0 object-cover border border-line shadow-sm"
               />
             )}
             <div className="flex flex-col gap-2">
@@ -353,7 +353,7 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
             <div className="flex flex-col gap-3">
               <div
                 role="status"
-                className="flex items-center gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-medium text-emerald-700"
+                className="flex items-center gap-2.5 bg-positive/10 border border-positive/25 px-4 py-3 text-sm font-medium text-positive"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -394,7 +394,7 @@ export function PillBottleScanner({ onSaved }: { onSaved?: () => void }) {
         <div className="flex flex-col gap-3">
           <div
             role="alert"
-            className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600"
+            className=" bg-danger/[0.07] border border-danger/25 px-4 py-3 text-sm text-danger"
           >
             {errorMsg ?? 'Scan failed — please try again.'}
           </div>
