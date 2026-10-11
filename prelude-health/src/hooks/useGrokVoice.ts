@@ -50,6 +50,9 @@ export function useGrokVoice() {
   const speakerMutedRef = useRef(false);
 
   const wsRef = useRef<WebSocket | null>(null);
+  // item_id of the user turn currently on screen, so a transcription event for
+  // a new utterance appends instead of overwriting the previous one.
+  const userItemRef = useRef<string | undefined>(undefined);
   const captureRef = useRef<AudioCapture | null>(null);
   const playbackRef = useRef<AudioPlaybackQueue | null>(null);
   const responseActiveRef = useRef(false);
@@ -128,6 +131,7 @@ export function useGrokVoice() {
     setState('connecting');
     setError(null);
     transcriptRef.current = [];
+    userItemRef.current = undefined;
     setTranscript([]);
     patientIdRef.current = patientId;
 
@@ -244,25 +248,32 @@ export function useGrokVoice() {
             });
             break;
 
-          case 'conversation.item.input_audio_transcription.delta':
+          case 'conversation.item.input_audio_transcription.delta': {
+            const sameItem = userItemRef.current === msg.item_id;
+            userItemRef.current = msg.item_id;
             setMessages((prev) => {
               const last = prev[prev.length - 1];
-              if (!last || last.role !== 'user') return [...prev, { role: 'user', content: msg.delta ?? '' }];
+              if (!last || last.role !== 'user' || !sameItem) return [...prev, { role: 'user', content: msg.delta ?? '' }];
               return [...prev.slice(0, -1), { ...last, content: last.content + (msg.delta ?? '') }];
             });
             break;
+          }
 
           // grok-transcribe sends cumulative snapshots (.updated) that may revise
-          // earlier words, then a final .completed; both replace the open turn.
+          // earlier words, then a final .completed; both replace their own turn.
           case 'conversation.item.input_audio_transcription.updated':
-          case 'conversation.item.input_audio_transcription.completed':
+          case 'conversation.item.input_audio_transcription.completed': {
+            const text: string = msg.transcript ?? '';
+            if (!text) break;
+            const sameItem = userItemRef.current === msg.item_id;
+            userItemRef.current = msg.item_id;
             setMessages((prev) => {
-              const text = msg.transcript ?? '';
               const last = prev[prev.length - 1];
-              if (last && last.role === 'user') return [...prev.slice(0, -1), { ...last, content: text }];
+              if (last && last.role === 'user' && sameItem) return [...prev.slice(0, -1), { ...last, content: text }];
               return [...prev, { role: 'user', content: text }];
             });
             break;
+          }
 
           case 'response.function_call_arguments.done': {
             let parsedArgs: Record<string, unknown> = {};

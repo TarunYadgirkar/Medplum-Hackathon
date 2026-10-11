@@ -20,6 +20,7 @@ import { CARRIERS } from '@/data/insurance-plans';
 import { ensureMic, micActive, readLevel } from '@/lib/mic-level';
 import { buildCareCard, careCardPath } from '@/lib/care-card';
 import { formatCostRange } from '@/lib/cost-estimate';
+import type { CoverageSummary, NoteGenerationResult } from '@/types';
 
 type Step = 'form' | 'consent' | 'calling' | 'complete';
 const OTHER_APPOINTMENT = '__other__';
@@ -196,6 +197,12 @@ function ReactiveBars({ active }: { active: boolean }) {
   );
 }
 
+interface GenerateNoteResponse {
+  noteId?: string;
+  result?: NoteGenerationResult;
+  coverage?: CoverageSummary;
+}
+
 export default function IntakePage() {
   const [step, setStep] = useState<Step>('form');
   const [name, setName] = useState('');
@@ -213,6 +220,7 @@ export default function IntakePage() {
   const [finishing, setFinishing] = useState(false);
   const [noteId, setNoteId] = useState<string | null>(null);
   const [cardPath, setCardPath] = useState<string | null>(null);
+  const [noteFailed, setNoteFailed] = useState(false);
   const [chartConnected, setChartConnected] = useState(false);
   const [voiceFirst, setVoiceFirst] = useState(false);
   const [sessionName, setSessionName] = useState('');
@@ -291,6 +299,9 @@ export default function IntakePage() {
   const finishCall = useCallback(async (transcriptText?: string) => {
     if (!session) return;
     setFinishing(true);
+    setNoteId(null);
+    setCardPath(null);
+    setNoteFailed(false);
     const finalTranscript = transcriptText
       ?? stop().map((u) => `${u.role === 'agent' ? 'Agent' : 'Patient'}: ${u.content}`).join('\n');
     try {
@@ -306,7 +317,8 @@ export default function IntakePage() {
           planId: payerKey === 'NONE' ? undefined : planId,
         }),
       });
-      const data = await res.json();
+      if (!res.ok) throw new Error(`generate-note returned ${res.status}`);
+      const data = (await res.json()) as GenerateNoteResponse;
       setNoteId(data.noteId ?? null);
       const card = data.result
         ? buildCareCard({
@@ -321,6 +333,7 @@ export default function IntakePage() {
       setCardPath(card ? careCardPath(card) : null);
     } catch (err) {
       console.error('generate-note failed', err);
+      setNoteFailed(true);
     } finally {
       setFinishing(false);
       goToStep('complete');
@@ -775,6 +788,13 @@ export default function IntakePage() {
                     Your answers are in your chart. Your clinician reviews the draft note before your visit. Your
                     Care Card shows where to go and what each option costs on your plan.
                   </p>
+
+                  {noteFailed && (
+                    <p role="alert" className="mt-5 bg-caution/10 px-4 py-3 text-[14px] leading-relaxed text-ink max-w-[60ch]">
+                      Your answers were saved, but the draft note and Care Card could not be made. Your clinician
+                      will still see your transcript. To try again, start a new check-in.
+                    </p>
+                  )}
 
                   <div className="mt-6 flex flex-col gap-2.5">
                     {cardPath && (

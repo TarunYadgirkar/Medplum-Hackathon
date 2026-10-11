@@ -61,7 +61,10 @@ function seededMemory(): NonNullable<typeof mem.__mem> {
   const now = Date.now();
   DEMO_PATIENTS.forEach((demo, i) => {
     const demoNote = DEMO_NOTES[demo.name];
-    if (!demoNote) return;
+    if (!demoNote) {
+      console.warn(`No demo note for seeded patient ${demo.name}; leaving them out of the keyless queue`);
+      return;
+    }
     const patientId = `demo-patient-${i + 1}`;
     const encounterId = `demo-encounter-${i + 1}`;
     const createdAt = new Date(now - (i + 1) * 17 * 60_000).toISOString();
